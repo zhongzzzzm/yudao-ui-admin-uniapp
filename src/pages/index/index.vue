@@ -1,41 +1,62 @@
 <template>
-  <view class="yd-page-container yd-page-container-paging">
+  <view class="yd-page-container">
     <!-- 顶部导航栏 -->
-    <!-- #ifndef MP-WEIXIN -->
-    <wd-navbar
-      title="工作台"
-      placeholder safe-area-inset-top fixed
-    >
+    <wd-navbar title="工作台" placeholder safe-area-inset-top fixed>
       <template #right>
         <view class="pr-10rpx" @click="gotoSearch">
           <wd-icon name="search-line" size="40rpx" color="#333" />
         </view>
       </template>
     </wd-navbar>
-    <!-- #endif -->
-    <!-- #ifdef MP-WEIXIN -->
-    <wd-navbar title="工作台" placeholder safe-area-inset-top fixed>
-      <template #left>
-        <view class="pl-4rpx" @click="gotoSearch">
-          <wd-icon name="search-line" size="40rpx" color="#333" />
-        </view>
-      </template>
-    </wd-navbar>
-    <!-- #endif -->
 
     <!-- 用户信息头部 -->
     <UserHeader />
-    <!-- Banner 轮播图 -->
-    <HomeBanner />
-    <!-- 菜单区域 -->
-    <MenuSection />
+
+    <!-- 今日概览卡 -->
+    <OverviewCard ref="overviewCardRef" />
+
+    <!-- 常用功能（可编辑） -->
+    <FavoriteGrid />
+
+    <!-- 最近使用 -->
+    <MenuRecent :menus="recentMenuItems" />
+
+    <!-- 全部功能：分组标题 + 宫格 -->
+    <view
+      v-for="group in menuGroups"
+      :key="group.key"
+      class="mx-20rpx mb-20rpx overflow-hidden rounded-16rpx bg-white"
+    >
+      <view class="sticky top-0 z-10 flex items-center bg-white px-24rpx py-20rpx">
+        <view class="mr-12rpx h-28rpx w-6rpx rounded-4rpx bg-[#018d71]" />
+        <text class="text-30rpx text-[#333] font-500">{{ group.name }}</text>
+      </view>
+      <view
+        v-for="sub in group.subGroups"
+        :key="sub.key"
+      >
+        <view v-if="sub.name" class="flex items-center px-24rpx pb-8rpx pt-12rpx">
+          <text class="text-24rpx text-[#999]">{{ sub.name }}</text>
+        </view>
+        <MenuGrid :menus="sub.menus" />
+      </view>
+    </view>
+
+    <!-- 底部安全区域 -->
+    <view class="h-40rpx" />
   </view>
 </template>
 
 <script lang="ts" setup>
-import HomeBanner from './components/banner.vue'
-import MenuSection from './components/menu-section.vue'
+import type { MenuItem } from './index'
+import { computed, ref } from 'vue'
+import { useUserStore } from '@/store/user'
+import FavoriteGrid from './components/favorite-grid.vue'
+import MenuGrid from './components/menu-grid.vue'
+import MenuRecent from './components/menu-recent.vue'
+import OverviewCard from './components/overview-card.vue'
 import UserHeader from './components/user-header.vue'
+import { getMenuGroups, getMenuItemByKey } from './index'
 
 defineOptions({
   name: 'Home',
@@ -48,10 +69,30 @@ definePage({
   },
 })
 
+const userStore = useUserStore()
+const overviewCardRef = ref<InstanceType<typeof OverviewCard>>()
+
+/** 菜单分组（带权限过滤，onShow 时重新计算） */
+const menuGroups = computed(() => getMenuGroups())
+
+/** 最近使用菜单（按点击时间倒序） */
+const recentMenuItems = computed<MenuItem[]>(() => {
+  const keys = userStore.recentMenus
+  if (!keys || keys.length === 0) {
+    return []
+  }
+  return keys.map(key => getMenuItemByKey(key)).filter(Boolean) as MenuItem[]
+})
+
 /** 跳转到菜单搜索页 */
 function gotoSearch() {
   uni.navigateTo({
     url: '/pages/index/search/index',
   })
 }
+
+onShow(() => {
+  // 从其他页面返回时刷新概览数据（待办数可能变化）
+  overviewCardRef.value?.loadStats()
+})
 </script>

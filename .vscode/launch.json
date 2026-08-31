@@ -6,7 +6,7 @@
       "type": "chrome",
       "name": "针对 localhost 启动 Chrome",
       "request": "launch",
-      "url": "http://localhost:9000",
+      "url": "http://localhost:9800",
       "env": { "NODE_ENV": "development" },
       "sourceMaps": true,
       "webRoot": "${workspaceFolder}"

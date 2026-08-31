@@ -1,20 +1,20 @@
 <p align="center">
-  <a href="https://github.com/yudaocode/yudao-ui-admin-uniapp">
+  <a href="https://github.com/ganfanrencode/ganfanren-ui-admin-uniapp">
     <img width="160" src="./src/static/logo.svg">
   </a>
 </p>
 
 <h1 align="center">
-  <a href="https://github.com/yudaocode/yudao-ui-admin-uniapp" target="_blank">芋道管理后台 · 移动端</a>
+  <a href="https://github.com/ganfanrencode/ganfanren-ui-admin-uniapp" target="_blank">干饭人管理后台 · 移动端</a>
 </h1>
 
 <div align="center">
 
-[![GitHub stars](https://img.shields.io/github/stars/yudaocode/yudao-ui-admin-uniapp?style=flat&logo=github)](https://github.com/yudaocode/yudao-ui-admin-uniapp)
-[![Gitee star](https://gitee.com/yudaocode/yudao-ui-admin-uniapp/badge/star.svg?theme=dark)](https://gitee.com/yudaocode/yudao-ui-admin-uniapp/stargazers)
+[![GitHub stars](https://img.shields.io/github/stars/ganfanrencode/ganfanren-ui-admin-uniapp?style=flat&logo=github)](https://github.com/ganfanrencode/ganfanren-ui-admin-uniapp)
+[![Gitee star](https://gitee.com/ganfanrencode/ganfanren-ui-admin-uniapp/badge/star.svg?theme=dark)](https://gitee.com/ganfanrencode/ganfanren-ui-admin-uniapp/stargazers)
 ![node version](https://img.shields.io/badge/node-%3E%3D20-green)
 ![pnpm version](https://img.shields.io/badge/pnpm-%3E%3D9-green)
-![GitHub License](https://img.shields.io/github/license/yudaocode/yudao-ui-admin-uniapp)
+![GitHub License](https://img.shields.io/github/license/ganfanrencode/ganfanren-ui-admin-uniapp)
 
 </div>
 
@@ -45,7 +45,7 @@
 
 ## 🐯 平台简介
 
-**芋道**，以开发者为中心，打造中国第一流的快速开发平台，全部开源，个人与企业可 100% 免费使用。本项目是 **芋道管理后台的移动端**：
+**干饭人**，以开发者为中心，打造中国第一流的快速开发平台，全部开源，个人与企业可 100% 免费使用。本项目是 **干饭人管理后台的移动端**：
 
 |               工作台                |               工作流                |               个人中心               |
 |:--------------------------------:|:--------------------------------:|:--------------------------------:|
@@ -97,7 +97,7 @@
 
 文档地址：<https://cloud.iocoder.cn>
 
-![架构图](./.image/common/yudao-cloud-architecture.png)
+![架构图](./.image/common/ganfanren-cloud-architecture.png)
 
 ## 😎 开源协议
 

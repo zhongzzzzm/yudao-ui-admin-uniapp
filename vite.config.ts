@@ -30,8 +30,8 @@ import vitePluginEruda from './scripts/vite-plugin-eruda'
 import { createCopyNativeResourcesPlugin } from './vite-plugins/copy-native-resources'
 import syncManifestPlugin from './vite-plugins/sync-manifest-plugins'
 
-/** 芋道 UI 组件解析器：本地 @/components/yudao-ui/* 的组件 */
-function YudaoUiResolver(): ComponentResolver {
+/** 干饭人 UI 组件解析器：本地 @/components/ganfanren-ui/* 的组件 */
+function GanfanrenUiResolver(): ComponentResolver {
   return {
     type: 'component',
     resolve: (name: string) => {
@@ -39,7 +39,7 @@ function YudaoUiResolver(): ComponentResolver {
         const compName = kebabCase(name)
         return {
           name,
-          from: `@/components/yudao-ui/${compName}/${compName}.vue`,
+          from: `@/components/ganfanren-ui/${compName}/${compName}.vue`,
         }
       }
     },
@@ -91,7 +91,7 @@ export default defineConfig(({ command, mode }) => {
       UniPlatform(),
       UniManifest(),
       UniComponents({ // 仅自动导入本地组件；Wot UI 与 z-paging 由 pages.config.ts 的 easycom 解析
-        resolvers: [YudaoUiResolver()],
+        resolvers: [GanfanrenUiResolver()],
         extensions: ['vue'],
         deep: true, // 是否递归扫描子目录，
         directoryAsNamespace: false, // 是否把目录名作为命名空间前缀，true 时组件名为 目录名+组件名，
@@ -105,21 +105,9 @@ export default defineConfig(({ command, mode }) => {
           'src/pages-core', // 这个是相对必要的路由，尽量留着（登录页、注册页、404页等）
           'src/pages-system', // “系统管理”模块
           'src/pages-infra', // “基础设施”模块
-          'src/pages-bpm', // “工作流程”模块
-          'src/pages-crm', // “客户管理”模块
-          'src/pages-statistics', // “统计中心”模块
-          'src/pages-iot', // “物联网”模块
-          'src/pages-member', // “会员中心”模块
-          'src/pages-pay', // “支付管理”模块
-          'src/pages-mp', // “公众号管理”模块
-          'src/pages-mall', // “商城管理”模块
-          'src/pages-mes', // “生产制造”模块
-          'src/pages-ai', // “人工智能”模块
-          'src/pages-im', // “即时通讯”模块
-          'src/pages-erp', // “ERP 管理”模块
-          'src/pages-hrm', // “人力资源管理”模块
-          'src/pages-fms', // “财务会计”模块
-          'src/pages-wms', // “仓储管理”模块
+          'src/pages-rpt', // “报送管理”模块
+          'src/pages-tax', // “税务管理”模块
+          'src/pages-fin', // “财务”模块
         ],
         dts: 'src/types/uni-pages.d.ts',
       }),
@@ -137,7 +125,6 @@ export default defineConfig(({ command, mode }) => {
         excludePages: [
           '**/components/**/**.*',
           '**/sections/**/**.*',
-          'src/pages-crm/statistics/**',
         ],
       }),
       Uni(),
@@ -171,12 +158,12 @@ export default defineConfig(({ command, mode }) => {
           return html.replace('%BUILD_TIME%', dayjs().format('YYYY-MM-DD HH:mm:ss')).replace('%VITE_APP_TITLE%', VITE_APP_TITLE)
         },
       },
-      // 打包分析插件，h5 + 生产环境才弹出
+      // 打包分析插件，h5 + 生产环境才生成；需 ANALYZER=true 才自动打开浏览器
       UNI_PLATFORM === 'h5'
       && mode === 'production'
       && visualizer({
         filename: './node_modules/.cache/visualizer/stats.html',
-        open: true,
+        open: process.env.ANALYZER === 'true',
         gzipSize: true,
         brotliSize: true,
       }),

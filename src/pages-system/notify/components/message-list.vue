@@ -35,8 +35,8 @@
               <dict-tag :type="DICT_TYPE.USER_TYPE" :value="item.userType" />
             </view>
             <view class="mb-12rpx flex items-center text-28rpx text-[#666]">
-              <text class="mr-8rpx shrink-0 text-[#999]">用户编号：</text>
-              <text class="min-w-0 flex-1 truncate">{{ item.userId }}</text>
+              <text class="mr-8rpx shrink-0 text-[#999]">收件人：</text>
+              <text class="min-w-0 flex-1 truncate">{{ getUserNickname(item.userId) }}</text>
             </view>
             <view class="mb-12rpx flex items-center text-28rpx text-[#666]">
               <text class="mr-8rpx shrink-0 text-[#999]">模板编码：</text>
@@ -73,11 +73,26 @@
 import type { NotifyMessage } from '@/api/system/notify/message'
 import { ref } from 'vue'
 import { getNotifyMessagePage } from '@/api/system/notify/message'
+import { getSimpleUserList } from '@/api/system/user'
 import { DICT_TYPE } from '@/utils/constants'
 import { formatDateTime } from '@/utils/date'
 import MessageSearchForm from './message-search-form.vue'
 
 const list = ref<NotifyMessage[]>([]) // 列表数据
+
+/** 用户编号 → 昵称映射（收件人展示用，加载失败不影响列表） */
+const userMap = ref<Map<number, string>>(new Map())
+getSimpleUserList().then((users) => {
+  userMap.value = new Map(users.map(user => [user.id, user.nickname]))
+}).catch(() => {})
+
+/** 收件人昵称（映射不到时降级为「用户 #id」仅作兜底，正常情况均展示昵称） */
+function getUserNickname(userId?: number) {
+  if (!userId) {
+    return '-'
+  }
+  return userMap.value.get(userId) ?? '-'
+}
 const pagingRef = ref<any>() // 分页组件引用
 const queryParams = ref<Record<string, any>>({}) // 查询参数
 

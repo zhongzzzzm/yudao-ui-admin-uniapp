@@ -2,8 +2,10 @@
   <view class="yd-page-container">
     <!-- 顶部导航栏 -->
     <wd-navbar
+      left-arrow
       title="通讯录"
       placeholder safe-area-inset-top fixed
+      @click-left="handleBack"
     />
 
     <!-- 面包屑导航 -->
@@ -87,6 +89,7 @@ import { useToast } from '@wot-ui/ui/components/wd-toast'
 import { computed, onMounted, ref } from 'vue'
 import { getSimpleDeptList } from '@/api/system/dept'
 import { getSimpleUserList, getUser } from '@/api/system/user'
+import { navigateBackPlus } from '@/utils'
 import { findChildren, handleTree } from '@/utils/tree'
 import Breadcrumb from './components/breadcrumb.vue'
 
@@ -126,6 +129,10 @@ const currentUserList = computed(() => {
 })
 
 /** 进入部门层级 */
+function handleBack() {
+  navigateBackPlus()
+}
+
 function handleEnterDept(item: Dept) {
   breadcrumbRef.value?.enter({ id: item.id!, name: item.name })
 }

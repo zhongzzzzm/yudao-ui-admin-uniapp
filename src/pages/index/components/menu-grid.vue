@@ -1,41 +1,41 @@
 <template>
-  <view style="--wot-grid-item-padding: 12rpx 8rpx; --wot-grid-item-bg: transparent">
-    <wd-grid :column="column" clickable :border="false">
-      <wd-grid-item
-        v-for="menu in menus"
-        :key="menu.key"
-        :text="menu.name"
-        @click="navigateToMenu(menu)"
+  <view class="flex flex-wrap">
+    <view
+      v-for="menu in items"
+      :key="menu.key"
+      class="w-1/4 flex flex-col items-center py-20rpx"
+      @click="navigateToMenu(menu)"
+    >
+      <view
+        class="h-80rpx w-80rpx flex flex-shrink-0 items-center justify-center rounded-16rpx"
+        :style="getIconStyle(menu)"
       >
-        <template #icon>
-          <view
-            class="h-80rpx w-80rpx flex items-center justify-center rounded-16rpx"
-            :style="getIconStyle(menu)"
-          >
-            <wd-icon :name="menu.icon" size="50rpx" :color="menu.iconColor" />
-          </view>
-        </template>
-      </wd-grid-item>
-    </wd-grid>
+        <wd-icon :name="menu.icon" size="44rpx" :color="menu.iconColor" />
+      </view>
+      <text class="line-clamp-2 mt-12rpx w-140rpx text-center text-24rpx text-[#333] leading-32rpx">
+        {{ menu.name }}
+      </text>
+    </view>
   </view>
 </template>
 
 <script lang="ts" setup>
 import type { MenuItem } from '../index'
+import { computed } from 'vue'
 import { useMenuNavigate } from '../index'
 
 defineOptions({
   name: 'MenuGrid',
 })
 
-withDefaults(defineProps<{
-  menus: MenuItem[] // 菜单列表
-  column?: number // 每行列数
-}>(), {
-  column: 4,
-})
+const props = defineProps<{
+  menus?: MenuItem[] // 菜单列表
+}>()
 
 const { navigateToMenu } = useMenuNavigate()
+
+/** 菜单列表（未传时按空数组处理） */
+const items = computed(() => props.menus ?? [])
 
 /** 获取图标样式 */
 function getIconStyle(menu: MenuItem) {
@@ -45,19 +45,3 @@ function getIconStyle(menu: MenuItem) {
   }
 }
 </script>
-
-<style lang="scss" scoped>
-:deep(.wd-grid-item__text) {
-  width: 100%;
-  min-height: 40rpx;
-  font-size: 24rpx;
-  line-height: 32rpx;
-  color: #333;
-  overflow: hidden;
-  display: -webkit-box;
-  white-space: normal;
-  word-break: break-all;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-}
-</style>
