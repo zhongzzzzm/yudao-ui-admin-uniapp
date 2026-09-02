@@ -29,7 +29,9 @@ export interface ReportResultVO {
   ruleId: number // 规则ID
   ruleCode?: string // 规则编码
   ruleDescription?: string // 规则说明
+  validationFlag?: number // 校验标识
   passed?: number // 是否通过
+  status?: number // 是否维护原因：0否 1是（字典 yes_no）
   errorCount?: number // 错误数
   passCount?: number // 通过数
   ignoreCount?: number // 忽略数
@@ -139,4 +141,74 @@ export interface ReportDataBatchVO {
 /** 获得数据版本列表（底稿上传、结果筛选等场景的下拉数据源） */
 export function getReportDataBatchList() {
   return http.get<ReportDataBatchVO[]>('/validation/report-data-batch/list')
+}
+
+/** 获得数据版本分页（数据版本列表页） */
+export function getReportDataBatchPage(params: PageParam & { batchDate?: string }) {
+  return http.get<PageResult<ReportDataBatchVO>>('/validation/report-data-batch/page', params)
+}
+
+/** 复制上次错误原因的结果 */
+export interface CopyReasonsResultVO {
+  total: number // 上一任务原因总数
+  copied: number // 成功复制条数
+  skipped: number // 跳过条数（已维护原因的结果不覆盖）
+}
+
+/** 任务错误原因项 */
+export interface TaskErrorReasonVO {
+  id: number // 编号
+  ruleId: number // 规则ID
+  ruleCode: string // 规则编码
+  ruleDescription?: string // 规则说明
+  passed?: number // 是否通过
+  reason?: string // 纠正原因
+  description?: string // 备注
+  createTime?: string // 创建时间
+}
+
+/** 生成校验结果文件（type：0 新生成 1 重新生成覆盖） */
+export function generateValidationResult(id: number, type: number) {
+  return http.get<boolean>('/validation/report-task/generate', { id, type })
+}
+
+/** 生成前预检：未通过的规则是否都已维护原因 */
+export function readyForGenerate(id: number) {
+  return http.get<boolean>('/validation/report-task/readyForGenerate', { id })
+}
+
+/** 导出前预检：校验文件是否已生成完毕 */
+export function readyForDownload(id: number) {
+  return http.get<boolean>('/validation/report-task/readyForDownload', { id })
+}
+
+/** 复制上一任务维护的错误原因到本任务 */
+export function copyLastReasons(taskId: number) {
+  return http.post<CopyReasonsResultVO>('/validation/report-task/copy-last-reasons', undefined, { taskId })
+}
+
+/** 获取任务下所有错误原因 */
+export function getTaskErrorReasons(taskId: number) {
+  return http.get<TaskErrorReasonVO[]>('/validation/report-task/error-reasons', { taskId })
+}
+
+/** 行级对比明细 */
+export interface DiffDetailVO {
+  id: number // 编号
+  taskId: number // 对比任务ID
+  resultId: number // 表级结果ID
+  hisBatchId?: number // 历史数据版本
+  cmpBatchId?: number // 当前数据版本
+  reportId?: number // 报表ID
+  reportName?: string // 报表名称
+  hisRowIndex?: number // 历史报表行号
+  cmpRowIndex?: number // 当前报表行号
+  logicalKey?: string // 组合主键
+  diffType?: string // 差异类型
+  createTime?: string // 创建时间
+}
+
+/** 获得行级对比明细分页 */
+export function getDiffDetailPage(params: PageParam & { resultId?: number }) {
+  return http.get<PageResult<DiffDetailVO>>('/validation/diff-detail/page', params)
 }

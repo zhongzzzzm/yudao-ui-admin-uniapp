@@ -18,9 +18,6 @@
     <!-- 常用功能（可编辑） -->
     <FavoriteGrid />
 
-    <!-- 最近使用 -->
-    <MenuRecent :menus="recentMenuItems" />
-
     <!-- 全部功能：分组标题 + 宫格 -->
     <view
       v-for="group in menuGroups"
@@ -48,15 +45,12 @@
 </template>
 
 <script lang="ts" setup>
-import type { MenuItem } from './index'
 import { computed, ref } from 'vue'
-import { useUserStore } from '@/store/user'
 import FavoriteGrid from './components/favorite-grid.vue'
 import MenuGrid from './components/menu-grid.vue'
-import MenuRecent from './components/menu-recent.vue'
 import OverviewCard from './components/overview-card.vue'
 import UserHeader from './components/user-header.vue'
-import { getMenuGroups, getMenuItemByKey } from './index'
+import { getMenuGroups } from './index'
 
 defineOptions({
   name: 'Home',
@@ -69,20 +63,10 @@ definePage({
   },
 })
 
-const userStore = useUserStore()
 const overviewCardRef = ref<InstanceType<typeof OverviewCard>>()
 
 /** 菜单分组（带权限过滤，onShow 时重新计算） */
 const menuGroups = computed(() => getMenuGroups())
-
-/** 最近使用菜单（按点击时间倒序） */
-const recentMenuItems = computed<MenuItem[]>(() => {
-  const keys = userStore.recentMenus
-  if (!keys || keys.length === 0) {
-    return []
-  }
-  return keys.map(key => getMenuItemByKey(key)).filter(Boolean) as MenuItem[]
-})
 
 /** 跳转到菜单搜索页 */
 function gotoSearch() {

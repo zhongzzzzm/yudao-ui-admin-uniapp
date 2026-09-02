@@ -24,9 +24,14 @@
         <view class="m-24rpx overflow-hidden rounded-16rpx bg-white p-24rpx shadow-sm">
           <view class="mb-16rpx flex items-center justify-between">
             <text class="flex-1 text-32rpx text-[#333] font-semibold">{{ ledger.companyName || '-' }}</text>
-            <wd-tag :type="ledger.status === 0 ? 'warning' : 'success'" plain class="ml-16rpx flex-shrink-0">
-              {{ getDictLabel(DICT_TYPE.TAX_LEDGER_STATUS, ledger.status) || '未知' }}
-            </wd-tag>
+            <view class="ml-16rpx flex flex-shrink-0 items-center gap-12rpx">
+              <wd-tag :type="ledger.status === 0 ? 'warning' : 'success'" plain>
+                {{ getDictLabel(DICT_TYPE.TAX_LEDGER_STATUS, ledger.status) || '未知' }}
+              </wd-tag>
+              <view v-if="canEdit" class="p-8rpx" @click="openRemarkEditor">
+                <wd-icon name="edit" size="36rpx" color="#018d71" />
+              </view>
+            </view>
           </view>
           <view class="text-26rpx space-y-10rpx">
             <view class="flex">
@@ -55,9 +60,9 @@
               <text class="w-180rpx flex-shrink-0 text-[#999]">税额</text>
               <text class="flex-1 text-[#333]">{{ ledger.taxAmount }}（已缴 {{ ledger.paidAmount ?? 0 }}）</text>
             </view>
-            <view v-if="ledger.remark" class="flex">
+            <view class="flex">
               <text class="w-180rpx flex-shrink-0 text-[#999]">备注</text>
-              <text class="flex-1 text-[#333]">{{ ledger.remark }}</text>
+              <text class="flex-1 text-[#333]">{{ ledger.remark || '-' }}</text>
             </view>
           </view>
         </view>
@@ -157,6 +162,33 @@
         </wd-button>
       </view>
     </wd-popup>
+    <!-- 编辑备注 -->
+    <wd-popup v-model="showRemark" position="bottom" custom-class="rounded-t-24rpx" closable safe-area-inset-bottom>
+      <view class="p-24rpx pb-40rpx">
+        <view class="mb-16rpx text-32rpx text-[#333] font-500">
+          编辑备注
+        </view>
+        <textarea
+          v-model="remarkDraft"
+          :maxlength="200"
+          placeholder="请输入备注"
+          class="min-h-140rpx w-full rounded-12rpx bg-[#f7f8f9] p-20rpx text-26rpx"
+        />
+        <view class="mt-8rpx text-right text-22rpx text-[#bbb]">
+          {{ remarkDraft.length }}/200
+        </view>
+        <wd-button
+          block
+          class="mt-24rpx"
+          type="primary"
+          :disabled="remarkSaving"
+          :loading="remarkSaving"
+          @click="saveRemark"
+        >
+          保存
+        </wd-button>
+      </view>
+    </wd-popup>
   </view>
 </template>
 
@@ -169,6 +201,7 @@ import {
   createTaxLedgerMaterialBatch,
   getTaxLedger,
   getTaxLedgerMaterialListByLedger,
+  updateTaxLedger,
 } from '@/api/tax/ledger'
 import { uploadFile } from '@/api/infra/file'
 import { useAccess } from '@/hooks/useAccess'
@@ -201,6 +234,44 @@ const materials = ref<TaxLedgerMaterialVO[]>([])
 
 /** 上传材料权限（tax:ledger-material:create） */
 const canUploadMaterial = computed(() => hasAccessByCodes(['tax:ledger-material:create']))
+
+/** 编辑备注（tax:ledger:update），状态由附件驱动不可手改 */
+const canEdit = computed(() => hasAccessByCodes(['tax:ledger:update']))
+const showRemark = ref(false)
+const remarkDraft = ref('')
+const remarkSaving = ref(false)
+
+function openRemarkEditor() {
+  remarkDraft.value = ledger.value?.remark || ''
+  showRemark.value = true
+}
+
+async function saveRemark() {
+  const l = ledger.value
+  if (!l || remarkSaving.value) {
+    return
+  }
+  remarkSaving.value = true
+  try {
+    // 与 PC 编辑表单同口径：只回传可编辑字段，其余由后端保留
+    await updateTaxLedger({
+      id: l.id,
+      companyId: l.companyId,
+      taxType: l.taxType,
+      period: l.period,
+      freq: l.freq,
+      status: l.status,
+      remark: remarkDraft.value.trim(),
+    } as TaxLedgerVO)
+    toast.show('备注已保存')
+    showRemark.value = false
+    loadDetail()
+  } catch (e: any) {
+    toast.show(e?.message || '保存失败，请重试')
+  } finally {
+    remarkSaving.value = false
+  }
+}
 
 /** 申报材料行（申报表 / 完税证明） */
 const materialItems = computed(() => {

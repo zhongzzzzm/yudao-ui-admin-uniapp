@@ -1,6 +1,5 @@
 import { useToast } from '@wot-ui/ui/components/wd-toast'
 import { useAccess } from '@/hooks/useAccess'
-import { useUserStore } from '@/store/user'
 import { isTabBarPage } from '@/tabbar/config'
 import { parseUrl, setTabParams } from '@/utils/url'
 import menuConfig from './menu.json'
@@ -124,21 +123,15 @@ export function getSearchableMenus(): SearchableMenuItem[] {
 /**
  * 菜单跳转逻辑（菜单网格、搜索页共用）
  *
- * 处理：开发中提示、最近使用记录、tabBar 页 switchTab、普通页 navigateTo、失败兜底。
+ * 处理：开发中提示、tabBar 页 switchTab、普通页 navigateTo、失败兜底。
  */
 export function useMenuNavigate() {
   const toast = useToast()
-  const userStore = useUserStore()
 
   function navigateToMenu(menu: MenuItem) {
     if (!menu.url) {
       toast.show('功能开发中')
       return
-    }
-
-    // 跳转成功后才记录最近使用（仅真实可跳转的菜单，排除「仅 PC」提示页），避免失败跳转污染
-    const recordRecent = () => {
-      userStore.addRecentMenu(menu.key)
     }
 
     const { path, query } = parseUrl(menu.url)
@@ -150,7 +143,6 @@ export function useMenuNavigate() {
       }
       uni.switchTab({
         url: path,
-        success: recordRecent,
         fail: () => {
           toast.show('页面不存在')
         },
@@ -158,7 +150,6 @@ export function useMenuNavigate() {
     } else {
       uni.navigateTo({
         url: menu.url,
-        success: recordRecent,
         fail: () => {
           toast.show('页面不存在')
         },

@@ -57,6 +57,14 @@
                 "tax:ledger:query",
                 "tax:ledger:query-all"
               ]
+            },
+            {
+              "key": "tax-company",
+              "name": "公司定义",
+              "icon": "copyright",
+              "iconColor": "#fa541c",
+              "url": "/pages-tax/company/list",
+              "permission": "tax:company:query"
             }
           ]
         }
@@ -68,7 +76,7 @@
       "subGroups": [
         {
           "key": "validation-main",
-          "name": "",
+          "name": "任务与执行",
           "menus": [
             {
               "key": "validation-report-task",
@@ -79,12 +87,96 @@
               "permission": "validation:report-task:query"
             },
             {
+              "key": "validation-comparison",
+              "name": "报表对比",
+              "icon": "copy",
+              "iconColor": "#722ed1",
+              "url": "/pages-rpt/validation/comparison-list",
+              "permission": "validation:report-comparison:query"
+            },
+            {
               "key": "validation-diff-task",
               "name": "数据对比",
               "icon": "swap",
               "iconColor": "#2f54eb",
               "url": "/pages-rpt/validation/diff-list",
               "permission": "validation:diff-task:query"
+            }
+          ]
+        },
+        {
+          "key": "validation-config",
+          "name": "基础数据配置",
+          "menus": [
+            {
+              "key": "validation-report",
+              "name": "报表管理",
+              "icon": "file",
+              "iconColor": "#722ed1",
+              "url": "/pages-rpt/validation/report-list",
+              "permission": "validation:report:query"
+            },
+            {
+              "key": "validation-report-definition",
+              "name": "报表表样",
+              "icon": "multiple-horizontal",
+              "iconColor": "#722ed1",
+              "url": "/pages-rpt/validation/report-definition",
+              "permission": "validation:report-definition:query"
+            },
+            {
+              "key": "validation-report-data",
+              "name": "报表数据",
+              "icon": "unordered-list",
+              "iconColor": "#722ed1",
+              "url": "/pages-rpt/validation/report-data-list",
+              "permission": "validation:report-data:query"
+            },
+            {
+              "key": "validation-report-rule",
+              "name": "校验规则",
+              "icon": "filter",
+              "iconColor": "#722ed1",
+              "url": "/pages-rpt/validation/report-rule",
+              "permission": "validation:report-rule:query"
+            },
+            {
+              "key": "validation-report-rule-type",
+              "name": "规则类型",
+              "icon": "filter-fill",
+              "iconColor": "#722ed1",
+              "url": "/pages-rpt/validation/report-rule-type",
+              "permission": "validation:report-rule-type:query"
+            },
+            {
+              "key": "validation-report-dict",
+              "name": "报送字典",
+              "icon": "book",
+              "iconColor": "#722ed1",
+              "url": "/pages-rpt/validation/report-dict",
+              "permission": "validation:report-dict:query"
+            }
+          ]
+        },
+        {
+          "key": "validation-more",
+          "name": "版本与重报",
+          "menus": [
+            {
+              "key": "validation-data-batch",
+              "name": "数据版本",
+              "icon": "folder-add",
+              "iconColor": "#722ed1",
+              "url": "/pages-rpt/validation/data-batch-list",
+              "permission": "validation:report-data-batch:query"
+            },
+            {
+              "key": "validation-resubmit",
+              "name": "重报登记",
+              "icon": "history",
+              "iconColor": "#722ed1",
+              "url": "/pages-rpt/validation/resubmit-list",
+              "permission": "validation:report-resubmit:query"
             }
           ]
         }
@@ -105,6 +197,54 @@
               "iconColor": "#13c2c2",
               "url": "/pages-fin/invoice/list",
               "permission": "fin:invoice-ledger:query"
+            },
+            {
+              "key": "fin-invoice-verification",
+              "name": "进项票抵扣",
+              "icon": "check-square",
+              "iconColor": "#13c2c2",
+              "url": "/pages-fin/verification/list",
+              "permission": "fin:invoice-verification:query"
+            },
+            {
+              "key": "fin-invoice-voucher",
+              "name": "发票凭证关联",
+              "icon": "link",
+              "iconColor": "#13c2c2",
+              "url": "/pages-fin/voucher/list",
+              "permission": "fin:invoice-voucher:query"
+            },
+            {
+              "key": "fin-bx-airline",
+              "name": "行程单拆分",
+              "icon": "ordered-list",
+              "iconColor": "#13c2c2",
+              "url": "/pages-fin/airline/list",
+              "permission": "fin:bx-airline:query"
+            },
+            {
+              "key": "fin-bx-hotel",
+              "name": "住宿单拆分",
+              "icon": "unordered-list",
+              "iconColor": "#13c2c2",
+              "url": "/pages-fin/hotel/list",
+              "permission": "fin:bx-hotel:query"
+            },
+            {
+              "key": "fin-liquidity-calculation",
+              "name": "流动性测算",
+              "icon": "arrow-rise",
+              "iconColor": "#13c2c2",
+              "url": "/pages-fin/liquidity/calculation",
+              "permission": "fin:liquidity-calculation:query"
+            },
+            {
+              "key": "fin-liquidity-cashflow",
+              "name": "流动性现金流",
+              "icon": "arrow-fall",
+              "iconColor": "#13c2c2",
+              "url": "/pages-fin/liquidity/cashflow",
+              "permission": "fin:liquidity-cash-flow:query"
             }
           ]
         }

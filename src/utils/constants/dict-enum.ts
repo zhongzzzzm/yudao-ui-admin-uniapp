@@ -46,8 +46,16 @@ const TAX_DICT = {
   TAX_FREQ: 'tax_freq', // 办税频率
   TAX_LEDGER_STATUS: 'tax_ledger_status', // 办税台账状态
   TAX_MATER_TYPE: 'tax_mater_type', // 台账附件类型
+  TAX_LOAN_STATUS: 'tax_loan_status', // 投放状态：未投放/已投放
+  TAX_VAT_RATE: 'tax_vat_rate', // 增值税税率：免税/6%/13%
+  YES_NO: 'yes_no', // 是否
   REPORT_FILING_REVIEW_STATUS: 'report_filing_review_status', // 底稿复核状态
   REPORT_FILING_REVIEW_RESULT: 'report_filing_review_result', // 底稿复核结果
+  VALIDATION_DATA_STATUS: 'validation_data_status', // 数据/对比任务状态
+  VALIDATION_CATEGORY: 'validation_category', // 校验报表分类
+  VALIDATION_FLAG: 'validation_flag', // 校验标识
+  VALIDATION_RULE_CATEGORY: 'validation_rule_category', // 校验规则大类
+  VALIDATION_RULE_TYPE: 'validation_rule_type', // 校验规则细类
 }
 
 /** 字典类型枚举 - 统一导出 */

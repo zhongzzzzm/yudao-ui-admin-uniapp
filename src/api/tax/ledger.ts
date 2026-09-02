@@ -82,6 +82,11 @@ export function initTaxLedger(data: TaxLedgerInitReqVO) {
   return http.post<number>('/tax/ledger/init', data)
 }
 
+/** 更新办税台账（备注等），状态由附件自动驱动不可手改 */
+export function updateTaxLedger(data: TaxLedgerVO) {
+  return http.put<boolean>('/tax/ledger/update', data)
+}
+
 /** 上传办税台账附件（先调 /infra/file/upload 得到 url，再归档） */
 export function createTaxLedgerMaterialBatch(data: TaxLedgerMaterialBatchSaveReqVO) {
   return http.post<number>('/tax/ledger-material/create-batch', data)

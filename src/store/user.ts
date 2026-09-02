@@ -14,8 +14,6 @@ const userInfoState: IUserInfoRes = {
   avatar: '/static/images/default-avatar.png', // TODO @芋艿：CDN 化
 }
 
-const MAX_RECENT_MENUS = 12 // 最近使用菜单最多保留数量
-
 export const useUserStore = defineStore(
   'user',
   () => {
@@ -26,7 +24,6 @@ export const useUserStore = defineStore(
     const roles = ref<string[]>([]) // 角色标识列表
     const permissions = ref<string[]>([]) // 权限标识列表
     const favoriteMenus = ref<string[]>([]) // 常用菜单 key 列表
-    const recentMenus = ref<string[]>([]) // 最近使用菜单 key 列表（按点击时间倒序）
 
     /** 设置用户信息 */
     const setUserInfo = (val: AuthPermissionInfo) => {
@@ -70,13 +67,6 @@ export const useUserStore = defineStore(
       favoriteMenus.value = keys
     }
 
-    /** 记录一次最近使用（去重后置顶，最多保留 MAX_RECENT_MENUS 个） */
-    const addRecentMenu = (key: string) => {
-      const list = recentMenus.value.filter(k => k !== key)
-      list.unshift(key)
-      recentMenus.value = list.slice(0, MAX_RECENT_MENUS)
-    }
-
     /** 获取用户信息 */
     const fetchUserInfo = async () => {
       const res = await getAuthPermissionInfo()
@@ -93,7 +83,6 @@ export const useUserStore = defineStore(
       roles,
       permissions,
       favoriteMenus,
-      recentMenus,
       clearUserInfo,
       fetchUserInfo,
       setUserInfo,
@@ -101,7 +90,6 @@ export const useUserStore = defineStore(
       setTenantId,
       setVisitTenantId,
       setFavoriteMenus,
-      addRecentMenu,
     }
   },
   {
