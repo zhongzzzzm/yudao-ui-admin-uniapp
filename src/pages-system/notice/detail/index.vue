@@ -12,11 +12,6 @@
       <wd-cell-group border>
         <wd-cell title="公告编号" :value="formData?.id" />
         <wd-cell title="公告标题" :value="formData?.title" />
-        <wd-cell title="公告内容">
-          <template #value>
-            <rich-text :nodes="formData?.content || '-'" />
-          </template>
-        </wd-cell>
         <wd-cell title="公告类型">
           <dict-tag :type="DICT_TYPE.SYSTEM_NOTICE_TYPE" :value="formData?.type" />
         </wd-cell>
@@ -26,6 +21,14 @@
         <wd-cell title="备注" :value="formData?.remark || '-'" />
         <wd-cell title="创建时间" :value="formatDateTime(formData?.createTime)" />
       </wd-cell-group>
+
+      <!-- 公告内容：富文本整块渲染（放 cell value 位会被挤压且图片不可见） -->
+      <view v-if="formData?.content" class="m-24rpx overflow-hidden rounded-12rpx bg-white p-24rpx">
+        <view class="mb-16rpx text-28rpx text-[#333] font-500">
+          公告内容
+        </view>
+        <rich-text :nodes="formData.content" />
+      </view>
     </view>
 
     <!-- 底部操作按钮 -->
@@ -33,7 +36,7 @@
       <view class="yd-detail-footer-actions">
         <wd-button
           v-if="hasAccessByCodes(['system:notice:update'])"
-          class="flex-1" type="warning" @click="handleEdit"
+          class="flex-1" type="primary" @click="handleEdit"
         >
           编辑
         </wd-button>

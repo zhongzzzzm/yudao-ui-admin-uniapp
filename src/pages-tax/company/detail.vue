@@ -1,7 +1,7 @@
 <template>
   <view class="yd-page-container yd-page-container-paging">
     <wd-navbar
-      left-arrow title="公司定义" placeholder safe-area-inset-top fixed @click-left="handleBack"
+      left-arrow title="公司详情" placeholder safe-area-inset-top fixed @click-left="handleBack"
     />
 
     <scroll-view class="min-h-0 flex-1" scroll-y>

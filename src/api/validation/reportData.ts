@@ -19,6 +19,11 @@ export function getReportDataPage(params: PageParam & { reportId?: number, batch
 }
 
 /** 新增报表数据行 */
+/** 获得单条报表数据（按 id） */
+export function getReportData(id: number) {
+  return http.get<ReportDataVO>('/validation/report-data/get', { id })
+}
+
 export function createReportData(data: Partial<ReportDataVO>) {
   return http.post<number>('/validation/report-data/create', data)
 }
@@ -59,6 +64,21 @@ export interface ReportResubmitVO {
   description?: string // 描述
   status?: number // 状态
   createTime?: string // 创建时间
+}
+
+/** 创建重报登记 */
+export function createReportResubmit(data: Partial<ReportResubmitVO>) {
+  return http.post<number>('/validation/report-resubmit/create', data)
+}
+
+/** 更新重报登记 */
+export function updateReportResubmit(data: Partial<ReportResubmitVO>) {
+  return http.put<boolean>('/validation/report-resubmit/update', data)
+}
+
+/** 删除重报登记 */
+export function deleteReportResubmit(id: number) {
+  return http.delete<boolean>('/validation/report-resubmit/delete', undefined, { id })
 }
 
 /** 获得数据重报分页 */

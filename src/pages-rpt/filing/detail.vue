@@ -93,6 +93,14 @@
         </view>
 
         <!-- 结果网格 -->
+        <view v-if="gridError && !grid" class="m-24rpx mt-0 flex flex-col items-center rounded-16rpx bg-white px-24rpx py-40rpx shadow-sm">
+          <wd-icon name="exclamation-circle" size="60rpx" color="#fa8c16" />
+          <text class="mt-16rpx text-center text-26rpx text-[#999]">结果文件解析失败：{{ gridError }}</text>
+          <text class="mt-8rpx text-24rpx text-[#bbb]">可尝试「预览结果文件」或稍后重试</text>
+          <wd-button class="mt-24rpx" size="small" plain @click="loadDetail">
+            重试
+          </wd-button>
+        </view>
         <view v-if="grid" class="m-24rpx mt-0 overflow-hidden rounded-16rpx bg-white shadow-sm">
           <view class="border-b border-b-[#f0f0f0] px-24rpx py-20rpx text-28rpx text-[#333] font-500">
             报表结果
@@ -229,6 +237,7 @@ const loading = ref(true)
 const acting = ref(false)
 const filing = ref<TaxReportFilingVO | null>(null)
 const grid = ref<Awaited<ReturnType<typeof getTaxReportFilingResultGrid>> | null>(null)
+const gridError = ref('')
 const reviews = ref<ReviewVO[]>([])
 const activeSheet = ref(0)
 
@@ -236,7 +245,7 @@ const activeSheet = ref(0)
 const canExecute = computed(() => hasAccessByCodes(['rpt:tax-report-filing:execute']))
 
 const stageLabel = computed(() =>
-  (FILING_COMBINED_STAGE as Record<string, string>)[filing.value?.combinedStage ?? ''] ?? '未知')
+  (FILING_COMBINED_STAGE as Record<string, string>)[filing.value?.combinedStage ?? ''] ?? '待执行')
 const stageTagType = computed(() =>
   FILING_STAGE_TAG_TYPE[filing.value?.combinedStage ?? ''] ?? 'info')
 
@@ -296,7 +305,11 @@ async function loadDetail() {
     if (filing.value.resultFile) {
       getTaxReportFilingResultGrid(filingId.value).then((data) => {
         grid.value = data
-      }).catch(() => {})
+      }).catch((e) => {
+        // 历史任务的结果文件可能已失效（如存储地址不可达），明确提示而非静默
+        console.error('加载结果网格失败：', e)
+        gridError.value = e?.message || '结果文件解析失败'
+      })
     }
   } catch (e) {
     console.error('加载任务详情失败：', e)
@@ -390,7 +403,7 @@ function goReview(review: ReviewVO) {
   if (review.reviewStatus === 1) {
     return
   }
-  uni.navigateTo({ url: `/pages-rpt/review/detail?id=${review.id}` })
+  uni.navigateTo({ url: `/pages-rpt/review/detail?id=${review.id}&filingId=${filingId.value}&deptId=${review.deptId}` })
 }
 
 onLoad((query) => {

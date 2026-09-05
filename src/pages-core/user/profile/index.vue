@@ -10,7 +10,10 @@
     <!-- 信息区域 -->
     <wd-cell-group custom-class="cell-group" border>
       <wd-cell title="头像" is-link center @click="handleEditAvatar">
-        <wd-img :src="userProfile?.avatar" width="50rpx" height="50rpx" mode="aspectFill" round />
+        <wd-img
+          :key="profileAvatarSrc" :src="profileAvatarSrc" width="50rpx" height="50rpx" mode="aspectFill" round
+          @error="profileAvatarSrc = DEFAULT_AVATAR"
+        />
       </wd-cell>
       <wd-cell title="昵称" :value="userProfile?.nickname || '-'" is-link @click="handleEdit('nickname')" />
       <wd-cell title="性别" :value="getDictLabel(DICT_TYPE.SYSTEM_USER_SEX, userProfile?.sex) || '-'" is-link @click="handleEdit('sex')" />
@@ -62,6 +65,13 @@ const toast = useToast()
 const userStore = useUserStore()
 const loading = ref(true) // 用户信息加载状态
 const userProfile = ref<UserProfileVO | null>(null)
+/** 头像加载失败（如历史 CDN 地址失效）回退默认头像 */
+const DEFAULT_AVATAR = '/static/images/default-avatar.png'
+const profileAvatarSrc = ref(DEFAULT_AVATAR)
+
+function syncAvatarSrc() {
+  profileAvatarSrc.value = userProfile.value?.avatar || DEFAULT_AVATAR
+}
 
 // 头像裁剪相关
 const showCropper = ref(false)
@@ -82,6 +92,7 @@ async function loadUserProfile() {
   loading.value = true
   try {
     userProfile.value = await getUserProfile()
+    syncAvatarSrc()
   } finally {
     loading.value = false
   }
@@ -110,6 +121,7 @@ async function handleCropperConfirm(event: { tempFilePath: string }) {
     if (userProfile.value) {
       userProfile.value.avatar = avatarUrl
     }
+    syncAvatarSrc()
     // 2.2 同步更新 userStore 中的头像
     userStore.setUserAvatar(avatarUrl)
     toast.success('头像修改成功')

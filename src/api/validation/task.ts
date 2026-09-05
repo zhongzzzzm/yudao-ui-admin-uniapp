@@ -95,6 +95,21 @@ export interface DiffFieldDetailVO {
 }
 
 /** 获得校验任务分页 */
+/** 创建校验任务 */
+export function createReportTask(data: Partial<ReportTaskVO>) {
+  return http.post<number>('/validation/report-task/create', data)
+}
+
+/** 更新校验任务 */
+export function updateReportTask(data: Partial<ReportTaskVO>) {
+  return http.put<boolean>('/validation/report-task/update', data)
+}
+
+/** 删除校验任务 */
+export function deleteReportTask(id: number) {
+  return http.delete<boolean>('/validation/report-task/delete', undefined, { id })
+}
+
 export function getReportTaskPage(params: ReportTaskPageReqVO) {
   return http.get<PageResult<ReportTaskVO>>('/validation/report-task/page', params)
 }
@@ -115,6 +130,21 @@ export function getReportResultDetailPage(params: PageParam & { resultId?: numbe
 }
 
 /** 获得数据对比任务分页 */
+/** 创建版本对比任务 */
+export function createDiffTask(data: Partial<DiffTaskVO>) {
+  return http.post<number>('/validation/diff-task/create', data)
+}
+
+/** 更新版本对比任务 */
+export function updateDiffTask(data: Partial<DiffTaskVO>) {
+  return http.put<boolean>('/validation/diff-task/update', data)
+}
+
+/** 删除版本对比任务 */
+export function deleteDiffTask(id: number) {
+  return http.delete<boolean>('/validation/diff-task/delete', undefined, { id })
+}
+
 export function getDiffTaskPage(params: PageParam & { taskCode?: string, status?: number }) {
   return http.get<PageResult<DiffTaskVO>>('/validation/diff-task/page', params)
 }
@@ -146,6 +176,26 @@ export function getReportDataBatchList() {
 /** 获得数据版本分页（数据版本列表页） */
 export function getReportDataBatchPage(params: PageParam & { batchDate?: string }) {
   return http.get<PageResult<ReportDataBatchVO>>('/validation/report-data-batch/page', params)
+}
+
+/** 获得数据版本详情 */
+export function getReportDataBatch(id: number) {
+  return http.get<ReportDataBatchVO>('/validation/report-data-batch/get', { id })
+}
+
+/** 创建数据版本 */
+export function createReportDataBatch(data: Partial<ReportDataBatchVO>) {
+  return http.post<boolean>('/validation/report-data-batch/create', data)
+}
+
+/** 更新数据版本 */
+export function updateReportDataBatch(data: Partial<ReportDataBatchVO>) {
+  return http.put<boolean>('/validation/report-data-batch/update', data)
+}
+
+/** 删除数据版本 */
+export function deleteReportDataBatch(id: number) {
+  return http.delete<boolean>('/validation/report-data-batch/delete', undefined, { id })
 }
 
 /** 复制上次错误原因的结果 */

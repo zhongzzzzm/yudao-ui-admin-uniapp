@@ -274,6 +274,7 @@ definePage({
 const dialog = useDialog()
 const { hasAccessByCodes } = useAccess()
 const canCreate = hasAccessByCodes(['validation:report:create'])
+const canView = hasAccessByCodes(['validation:report:view'])
 const canUpdate = hasAccessByCodes(['validation:report:update'])
 const canDelete = hasAccessByCodes(['validation:report:delete'])
 const canImport = hasAccessByCodes(['validation:report:import'])
@@ -301,6 +302,14 @@ function dataStatusLabel(status?: number) {
 const name = ref('')
 const list = ref<ReportVO[]>([])
 const pagingRef = ref<any>()
+/** 规则类型页「查看报表」跳入时按分类过滤（category 即规则类型 id，与 PC 端口径一致） */
+const category = ref<number>()
+
+onLoad((query) => {
+  if (query?.category) {
+    category.value = Number(query.category)
+  }
+})
 
 function handleSearch() {
   pagingRef.value?.reload()
@@ -308,7 +317,7 @@ function handleSearch() {
 
 async function queryList(pageNo: number, pageSize: number) {
   try {
-    const data = await getReportPage({ pageNo, pageSize, name: name.value.trim() || undefined })
+    const data = await getReportPage({ pageNo, pageSize, name: name.value.trim() || undefined, category: category.value })
     pagingRef.value?.completeByTotal(data.list, data.total)
   } catch {
     pagingRef.value?.complete(false)
@@ -321,6 +330,9 @@ const activeItem = ref<ReportVO>()
 
 const actionOptions = computed(() => {
   const actions: { name: string, key: string, color?: string }[] = []
+  if (canView) {
+    actions.push({ name: '查看定义', key: 'view' })
+  }
   if (canUpdate) {
     actions.push({ name: '编辑', key: 'edit' })
   }
@@ -354,6 +366,10 @@ function handleAction({ item }: { item: { key: string } }) {
     return
   }
   switch (item.key) {
+    case 'view': {
+      uni.navigateTo({ url: `/pages-rpt/validation/report-definition?reportId=${activeItem.value?.id}` })
+      break
+    }
     case 'edit': {
       openForm(target)
       break

@@ -25,7 +25,7 @@
         >
           <view class="mb-12rpx flex items-center justify-between">
             <view class="line-clamp-1 flex-1 text-28rpx text-[#333] font-500">
-              {{ item.description || '发票比对记录' }}
+              {{ itemTitle(item) }}
             </view>
             <wd-tag v-if="item.status != null" :type="statusTagType(item.status)" plain class="ml-16rpx flex-shrink-0">
               {{ statusLabel(item.status) }}
@@ -42,7 +42,7 @@
     <wd-popup v-model="showDetail" position="bottom" custom-class="rounded-t-24rpx" closable safe-area-inset-bottom>
       <view class="max-h-70vh overflow-auto p-24rpx">
         <view class="mb-16rpx text-30rpx text-[#333] font-500">
-          {{ activeItem?.description || '台账详情' }}
+          {{ activeItem ? itemTitle(activeItem) : '台账详情' }}
         </view>
         <view v-for="section in detailSections" :key="section.label" class="mb-16rpx">
           <view class="mb-8rpx text-26rpx text-[#999]">
@@ -110,6 +110,17 @@ async function queryList(pageNo: number, pageSize: number) {
 /** 状态：0 处理中 1 处理完成 2 处理失败（FinDataStatusEnum） */
 function statusLabel(status?: number): string {
   return ({ 0: '处理中', 1: '处理完成', 2: '处理失败' } as Record<number, string>)[status ?? -1] ?? '未知'
+}
+
+/**
+ * 卡片标题：失败记录的 description 存的是后端异常堆栈文本，直接展示观感差，
+ * 统一回退为「发票比对记录」，异常信息以「处理失败」标签表达。
+ */
+function itemTitle(item: InvoiceLedgerVO): string {
+  if (item.status === 2) {
+    return '发票比对记录'
+  }
+  return item.description || '发票比对记录'
 }
 
 function statusTagType(status?: number): 'primary' | 'success' | 'error' | 'info' {

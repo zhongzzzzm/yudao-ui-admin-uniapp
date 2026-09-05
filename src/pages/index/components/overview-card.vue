@@ -85,15 +85,17 @@ const visibleMetrics = computed(() => {
 /** 拉取概览数据（任一失败该格显示「—」，不阻塞其他格） */
 async function loadStats() {
   loading.value = true
+  // 本地累加后再赋值，避免 onShow 重复调用时在旧值上翻倍
+  let todo = 0
   const jobs: Promise<void>[] = []
   if (hasAccessByCodes(['tax:ledger:query'])) {
     jobs.push(getTaxLedgerPage({ pageNo: 1, pageSize: 1, status: 0 }).then((res) => {
-      todoCount.value = (todoCount.value ?? 0) + (res.total ?? 0)
+      todo += res.total ?? 0
     }).catch(() => {}))
   }
   if (hasAccessByCodes(['rpt:filing-review:submit'])) {
     jobs.push(getFilingReviewPage({ pageNo: 1, pageSize: 1, reviewStatus: 0 }).then((res) => {
-      todoCount.value = (todoCount.value ?? 0) + (res.total ?? 0)
+      todo += res.total ?? 0
     }).catch(() => {}))
   }
   if (hasAccessByCodes(['rpt:tax-report-filing:query'])) {
@@ -107,6 +109,7 @@ async function loadStats() {
     }).catch(() => {}))
   }
   await Promise.allSettled(jobs)
+  todoCount.value = todo
   loading.value = false
 }
 

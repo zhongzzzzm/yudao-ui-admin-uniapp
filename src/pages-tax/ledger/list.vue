@@ -157,10 +157,17 @@ const pagingRef = ref<any>()
 const showCompanyPicker = ref(false)
 const companyColumns = ref<CompanySimpleVO[]>([])
 const currentCompany = ref<number>()
+/** 公司展示名：名称（编码），无编码时只展示名称 */
+function companyLabel(c?: CompanySimpleVO) {
+  if (!c) {
+    return ''
+  }
+  return c.companyCode ? `${c.companyName || '未命名公司'}（${c.companyCode}）` : (c.companyName || '未命名公司')
+}
 const currentCompanyName = computed(() =>
-  companyColumns.value.find(c => c.id === currentCompany.value)?.companyName)
+  companyLabel(companyColumns.value.find(c => c.id === currentCompany.value)))
 const companyActions = computed(() =>
-  companyColumns.value.map(c => ({ name: c.companyName || '未命名公司' })))
+  companyColumns.value.map(c => ({ name: companyLabel(c) })))
 
 function handleStatusChange(value: number) {
   if (currentStatus.value === value) {

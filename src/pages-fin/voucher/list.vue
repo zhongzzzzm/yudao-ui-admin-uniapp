@@ -17,4 +17,11 @@ import { getInvoiceVoucherPage } from '@/api/fin/invoiceVoucher'
 defineOptions({
   name: 'FinInvoiceVoucherList',
 })
+
+definePage({
+  style: {
+    navigationBarTitleText: '',
+    navigationStyle: 'custom',
+  },
+})
 </script>

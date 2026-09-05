@@ -247,6 +247,8 @@ const activeItem = ref<ReportDataVO>()
 
 const actionOptions = computed(() => {
   const actions: { name: string, key: string, color?: string }[] = []
+  // 查看明细（与 PC 端 validation:report-data:view 对应）
+  actions.push({ name: '查看明细', key: 'view' })
   if (canUpdate) {
     actions.push({ name: '编辑', key: 'edit' })
   }
@@ -257,9 +259,6 @@ const actionOptions = computed(() => {
 })
 
 function openActions(item: ReportDataVO) {
-  if (actionOptions.value.length === 0) {
-    return
-  }
   activeItem.value = item
   showActions.value = true
 }
@@ -270,7 +269,12 @@ function handleAction({ item }: { item: { key: string } }) {
   if (!target) {
     return
   }
-  if (item.key === 'edit') {
+  if (item.key === 'view') {
+    // get 接口无联表字段，把列表行的报表名/数据日期带上用于详情展示
+    const name = encodeURIComponent(target.reportName || '')
+    const date = encodeURIComponent(target.batchDate || '')
+    uni.navigateTo({ url: `/pages-rpt/validation/report-data?id=${target.id}&reportName=${name}&batchDate=${date}` })
+  } else if (item.key === 'edit') {
     openForm(target)
   } else if (item.key === 'delete') {
     dialog.confirm({

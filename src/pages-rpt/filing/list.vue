@@ -133,7 +133,7 @@ async function queryList(pageNo: number, pageSize: number) {
 }
 
 function stageLabel(stage?: string) {
-  return (FILING_COMBINED_STAGE as Record<string, string>)[stage ?? ''] ?? '未知'
+  return (FILING_COMBINED_STAGE as Record<string, string>)[stage ?? ''] ?? '待执行'
 }
 
 function stageTagType(stage?: string): 'primary' | 'success' | 'warning' | 'error' | 'info' {

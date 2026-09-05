@@ -40,7 +40,7 @@
         </wd-button>
         <wd-button
           v-if="hasAccessByCodes(['system:notify-template:update'])"
-          class="flex-1" type="warning" @click="handleEdit"
+          class="flex-1" type="primary" @click="handleEdit"
         >
           编辑
         </wd-button>

@@ -99,7 +99,7 @@ import type { FilingReviewVO } from '@/api/rpt/review'
 import type { TaxLedgerVO } from '@/api/tax/ledger'
 import { useToast } from '@wot-ui/ui/components/wd-toast'
 import { computed, ref, watch } from 'vue'
-import { FILING_COMBINED_STAGE, FILING_STAGE_TAG_TYPE, getTaxReportFilingPage } from '@/api/rpt/filing'
+import { FILING_COMBINED_STAGE, FILING_STAGE_TAG_TYPE, getTaxReportFilingPage, getTaxReportFilingStats } from '@/api/rpt/filing'
 import { getFilingReviewPage } from '@/api/rpt/review'
 import { getTaxLedgerPage } from '@/api/tax/ledger'
 import { useAccess } from '@/hooks/useAccess'
@@ -303,18 +303,28 @@ function handleItemClick(item: any) {
   } else if (activeTab.value === 'ledger') {
     uni.navigateTo({ url: `/pages-tax/ledger/detail?id=${item.id}` })
   } else {
-    uni.navigateTo({ url: `/pages-rpt/review/detail?id=${item.id}` })
+    // 复核详情页按 filingId 拉取复核记录列表后定位到当前条目，必须带全参数
+    uni.navigateTo({ url: `/pages-rpt/review/detail?id=${item.id}&filingId=${item.filingId}&deptId=${item.deptId}` })
   }
 }
 
-/** 刷新待办角标（办税待办 + 复核待办的数量之和） */
+/** 刷新待办角标（报送任务待办 + 办税待办 + 复核待办的数量之和） */
 async function refreshBadge() {
   try {
-    const [ledgerRes, reviewRes] = await Promise.all([
+    const [ledgerRes, reviewRes, filingStats, filingWaitReview] = await Promise.all([
       getTaxLedgerPage({ pageNo: 1, pageSize: 1, status: 0 }),
       getFilingReviewPage({ pageNo: 1, pageSize: 1, reviewStatus: 0 }),
+      hasAccessByCodes(['rpt:tax-report-filing:query'])
+        ? getTaxReportFilingStats().catch(() => null)
+        : Promise.resolve(null),
+      hasAccessByCodes(['rpt:tax-report-filing:query'])
+        ? getTaxReportFilingPage({ pageNo: 1, pageSize: 1, combinedStatus: 'waitReview' }).catch(() => null)
+        : Promise.resolve(null),
     ])
-    const total = (ledgerRes.total ?? 0) + (reviewRes.total ?? 0)
+    // 报送任务待办 = 待执行（待生成/可生成）+ 执行失败 + 待复核
+    const filingPending = (filingStats ? (filingStats.pending + filingStats.fail) : 0)
+      + (filingWaitReview?.total ?? 0)
+    const total = (ledgerRes.total ?? 0) + (reviewRes.total ?? 0) + filingPending
     tabbarStore.setTabbarItemBadge(1, total > 0 ? total : 0)
   } catch {
     // 角标刷新失败不影响页面，静默处理

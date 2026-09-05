@@ -208,7 +208,7 @@
             },
             {
               "key": "fin-invoice-voucher",
-              "name": "发票凭证关联",
+              "name": "凭证比对",
               "icon": "link",
               "iconColor": "#13c2c2",
               "url": "/pages-fin/voucher/list",

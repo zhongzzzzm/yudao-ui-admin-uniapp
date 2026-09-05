@@ -17,4 +17,11 @@ import { getBxHotelPage } from '@/api/fin/bxHotel'
 defineOptions({
   name: 'FinBxHotelList',
 })
+
+definePage({
+  style: {
+    navigationBarTitleText: '',
+    navigationStyle: 'custom',
+  },
+})
 </script>

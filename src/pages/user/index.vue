@@ -10,7 +10,10 @@
         @click="handleGoProfile"
       >
         <view class="avatar-wrapper mr-24rpx">
-          <wd-img :src="userInfo.avatar" width="120rpx" height="120rpx" mode="aspectFill" round />
+          <wd-img
+            :key="avatarSrc" :src="avatarSrc" width="120rpx" height="120rpx" mode="aspectFill" round
+            @error="avatarSrc = DEFAULT_AVATAR"
+          />
         </view>
         <view class="flex-1">
           <view class="mb-8rpx text-40rpx text-[#323333] font-semibold">
@@ -55,11 +58,7 @@
             <wd-icon name="exclamation-circle" size="20px" color="#faad14" class="mr-16rpx" />
           </template>
         </wd-cell>
-        <wd-cell title="意见反馈" is-link @click="handleGoFeedback">
-          <template #prefix>
-            <wd-icon name="edit" size="20px" color="#722ed1" class="mr-16rpx" />
-          </template>
-        </wd-cell>
+        <!-- 意见反馈：后端暂无反馈接口（提交为 mock），入口暂时隐藏，接口就绪后恢复 -->
         <wd-cell title="联系客服" is-link @click="handleGoContact">
           <template #prefix>
             <wd-icon name="phone" size="20px" color="#13c2c2" class="mr-16rpx" />
@@ -108,6 +107,12 @@ const toast = useToast()
 const dialog = useDialog()
 const { hasAccessByCodes } = useAccess()
 const { userInfo } = storeToRefs(userStore)
+/** 头像加载失败（如历史 CDN 地址失效）回退默认头像 */
+const DEFAULT_AVATAR = '/static/images/default-avatar.png'
+const avatarSrc = ref(userInfo.value.avatar || DEFAULT_AVATAR)
+watch(() => userInfo.value.avatar, (val) => {
+  avatarSrc.value = val || DEFAULT_AVATAR
+})
 const userProfile = ref<UserProfileVO | null>(null) // 用户详细信息
 const tenantEnabled = computed(() => import.meta.env.VITE_APP_TENANT_ENABLE === 'true') // 租户开关
 
@@ -130,11 +135,6 @@ function handleGoSecurity() {
 /** 跳转到常见问题 */
 function handleGoFaq() {
   uni.navigateTo({ url: '/pages-core/user/faq/index' })
-}
-
-/** 跳转到意见反馈 */
-function handleGoFeedback() {
-  uni.navigateTo({ url: '/pages-core/user/feedback/index' })
 }
 
 /** 跳转联系客服 */

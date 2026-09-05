@@ -50,10 +50,7 @@
         <text class="text-[#1890ff]" @click="handleGoPrivacy">《隐私协议》</text>
       </view>
       <text class="mb-10rpx text-24rpx text-gray-400">
-        Copyright © 2026 iocoder.cn All Rights Reserved.
-      </text>
-      <text class="text-24rpx text-gray-400">
-        干饭人源码
+        Copyright © 2026 干饭人
       </text>
     </view>
   </view>

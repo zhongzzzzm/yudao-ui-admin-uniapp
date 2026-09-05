@@ -20,18 +20,17 @@
       </view>
 
       <template v-else>
-        <!-- 数据版本选择 -->
+        <!-- 数据版本选择（wd-picker 2.x 为纯弹层组件，需自渲染选中值与触发区） -->
         <view class="m-24rpx mb-0 flex items-center justify-between rounded-16rpx bg-white px-24rpx py-16rpx shadow-sm">
           <text class="text-28rpx text-[#333]">数据版本</text>
-          <wd-picker
-            v-model="batchId"
-            :columns="batchColumns"
-            label=""
-            prop="batchId"
-            :show-spinner="false"
-            custom-view-class="wd-picker__view"
-            @confirm="handleBatchChange"
-          />
+          <picker mode="selector" :range="batchLabels" :value="batchIndex(batchId)" @change="handleBatchChange">
+            <view class="flex items-center gap-8rpx">
+              <text class="text-28rpx" :class="batchId != null ? 'text-[#333]' : 'text-[#bbb]'">
+                {{ batchLabelOf(batchId) || '请选择数据版本' }}
+              </text>
+              <wd-icon name="arrow-down" size="24rpx" color="#999" />
+            </view>
+          </picker>
         </view>
 
         <!-- 上传进度 -->
@@ -121,6 +120,8 @@ import { useToast } from '@wot-ui/ui/components/wd-toast'
 import { computed, ref } from 'vue'
 import { getReportDataBatchList } from '@/api/validation/task'
 import { getSourceFileAvailability, uploadOneSourceFile } from '@/api/rpt/sourceFile'
+import { SOURCE_FILE_ALLOWED_EXT, validateUploadFiles } from '@/utils/uploadValidate'
+import type { ChosenFileMeta } from '@/utils/uploadValidate'
 import { useAccess } from '@/hooks/useAccess'
 
 defineOptions({
@@ -151,6 +152,13 @@ const availability = ref<Awaited<ReturnType<typeof getSourceFileAvailability>> |
 /** 数据版本选择 */
 const batchId = ref<number>()
 const batchColumns = ref<{ label: string, value: number }[]>([])
+const batchLabels = computed(() => batchColumns.value.map(c => c.label))
+function batchIndex(id?: number) {
+  return batchColumns.value.findIndex(c => c.value === id)
+}
+function batchLabelOf(id?: number) {
+  return batchColumns.value[batchIndex(id)]?.label
+}
 
 const progressPercent = computed(() => {
   const a = availability.value
@@ -193,8 +201,12 @@ async function loadAvailability() {
   availability.value = await getSourceFileAvailability(batchId.value)
 }
 
-function handleBatchChange({ value }: { value: number }) {
-  batchId.value = value
+function handleBatchChange(e: any) {
+  const item = batchColumns.value[Number(e.detail.value)]
+  if (!item || item.value === batchId.value) {
+    return
+  }
+  batchId.value = item.value
   loadAvailability().catch(() => toast.show('加载可用性失败'))
 }
 
@@ -231,29 +243,31 @@ function handleUploadAction({ item }: { item: { type: string } }) {
     return
   }
   if (item.type === 'camera') {
+    // 拍照一次一张
     uni.chooseImage({
       count: 1,
       sourceType: ['camera'],
-      success: res => doUpload(draft, res.tempFilePaths[0]),
+      success: res => handleFilesChosen(draft, toChosenFiles(res)),
     })
   } else if (item.type === 'album') {
+    // 相册支持多选
     uni.chooseImage({
-      count: 1,
+      count: 9,
       sourceType: ['album'],
-      success: res => doUpload(draft, res.tempFilePaths[0]),
+      success: res => handleFilesChosen(draft, toChosenFiles(res)),
     })
   } else {
     // #ifdef MP-WEIXIN
     uni.chooseMessageFile({
-      count: 1,
+      count: 9,
       type: 'file',
-      success: res => doUpload(draft, res.tempFiles[0].path),
+      success: res => handleFilesChosen(draft, toChosenFiles(res)),
     })
     // #endif
     // #ifdef H5
     uni.chooseFile?.({
-      count: 1,
-      success: (res: any) => doUpload(draft, res.tempFilePaths[0]),
+      count: 9,
+      success: (res: any) => handleFilesChosen(draft, toChosenFiles(res)),
     })
     // #endif
     // #ifdef APP-PLUS
@@ -262,14 +276,46 @@ function handleUploadAction({ item }: { item: { type: string } }) {
   }
 }
 
-/** 执行上传（类型白名单 + 大小上限校验在图片类来源由 chooseImage 限制，文件类来源提交前校验） */
-async function doUpload(draft: DraftProgressItem, filePath?: string) {
-  if (!filePath || !batchId.value) {
+/** 统一提取选择结果（路径 + 文件名 + 大小），优先取 tempFiles（含文件名/大小，H5 blob 路径推不出扩展名） */
+function toChosenFiles(res: any): ChosenFileMeta[] {
+  const files = res?.tempFiles
+  if (Array.isArray(files) && files.length) {
+    return files.map((f: any) => ({
+      path: f.path ?? f.tempFilePath ?? res.tempFilePaths?.[0],
+      name: f.name,
+      size: f.size,
+    })).filter((f: ChosenFileMeta) => !!f.path)
+  }
+  return (res?.tempFilePaths ?? []).map((p: string) => ({ path: p }))
+}
+
+/** 选择完成：先本地校验（类型/大小），再按数量走单张或批量上传 */
+function handleFilesChosen(draft: DraftProgressItem, files: ChosenFileMeta[]) {
+  if (!files.length) {
+    return
+  }
+  const { valid, invalidCount, firstError } = validateUploadFiles(files, SOURCE_FILE_ALLOWED_EXT)
+  if (invalidCount > 0) {
+    toast.show(firstError || `已跳过 ${invalidCount} 个不符合要求的文件`)
+  }
+  if (!valid.length) {
+    return
+  }
+  if (valid.length === 1) {
+    doUpload(draft, valid[0])
+  } else {
+    doBatchUpload(draft, valid)
+  }
+}
+
+/** 执行上传（单张）；类型白名单 + 大小上限已在选择后本地校验 */
+async function doUpload(draft: DraftProgressItem, file: ChosenFileMeta) {
+  if (!file?.path || !batchId.value) {
     return
   }
   uploadingDefId.value = draft.draftDefId
   try {
-    const result = await uploadOneSourceFile(draft.draftDefId, batchId.value, filePath)
+    const result = await uploadOneSourceFile(draft.draftDefId, batchId.value, file.path)
     if (result.success) {
       toast.show(`「${draft.draftName}」上传成功`)
       availability.value = result.availability ?? availability.value
@@ -281,6 +327,38 @@ async function doUpload(draft: DraftProgressItem, filePath?: string) {
     toast.show(e?.message || '上传失败，请重试')
   } finally {
     uploadingDefId.value = undefined
+  }
+}
+
+/** 批量上传：逐张串行，结束后汇总「成功 N / 失败 M」（复用 uploadingDefId 置灰按钮） */
+async function doBatchUpload(draft: DraftProgressItem, files: ChosenFileMeta[]) {
+  if (!batchId.value) {
+    return
+  }
+  uploadingDefId.value = draft.draftDefId
+  uni.showLoading({ title: `上传中 0/${files.length}`, mask: true })
+  let successCount = 0
+  let failCount = 0
+  try {
+    for (let i = 0; i < files.length; i++) {
+      uni.showLoading({ title: `上传中 ${i + 1}/${files.length}`, mask: true })
+      try {
+        const result = await uploadOneSourceFile(draft.draftDefId, batchId.value, files[i].path)
+        if (result.success) {
+          successCount++
+          availability.value = result.availability ?? availability.value
+        } else {
+          failCount++
+        }
+      } catch {
+        failCount++
+      }
+    }
+  } finally {
+    uni.hideLoading()
+    uploadingDefId.value = undefined
+    loadAvailability().catch(() => {})
+    toast.show(failCount === 0 ? `已上传 ${successCount} 个文件` : `成功 ${successCount} 个，失败 ${failCount} 个`)
   }
 }
 

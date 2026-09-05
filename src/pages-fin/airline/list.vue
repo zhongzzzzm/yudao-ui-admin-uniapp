@@ -18,4 +18,11 @@ import { getBxAirlinePage } from '@/api/fin/bxAirline'
 defineOptions({
   name: 'FinBxAirlineList',
 })
+
+definePage({
+  style: {
+    navigationBarTitleText: '',
+    navigationStyle: 'custom',
+  },
+})
 </script>

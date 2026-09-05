@@ -18,4 +18,11 @@ import { getInvoiceVerificationPage } from '@/api/fin/invoiceVerification'
 defineOptions({
   name: 'FinInvoiceVerificationList',
 })
+
+definePage({
+  style: {
+    navigationBarTitleText: '',
+    navigationStyle: 'custom',
+  },
+})
 </script>

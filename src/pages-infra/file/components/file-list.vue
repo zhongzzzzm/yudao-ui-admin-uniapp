@@ -57,8 +57,8 @@
             </view>
             <!-- 操作按钮 -->
             <view class="mt-16rpx flex justify-end gap-16rpx">
-              <wd-button size="small" type="primary" variant="plain" @click.stop="openFile(item.url)">
-                打开
+              <wd-button size="small" type="primary" variant="plain" @click.stop="previewFile(item)">
+                预览
               </wd-button>
               <wd-button size="small" type="info" @click.stop="handleCopyUrl(item)">
                 复制链接
@@ -93,12 +93,23 @@ import { onMounted, onUnmounted, ref } from 'vue'
 import { deleteFile, getFilePage, uploadFile } from '@/api/infra/file'
 import { useAccess } from '@/hooks/useAccess'
 import { formatDateTime } from '@/utils/date'
-import { formatFileSize, openFile } from '@/utils/download'
+import { formatFileSize } from '@/utils/download'
 import FileSearchForm from './file-search-form.vue'
 
 const { hasAccessByCodes } = useAccess()
 const toast = useToast()
 const dialog = useDialog()
+
+/** 在线预览（kkfileview，预览失败时预览页内有下载兜底） */
+function previewFile(item: FileVO) {
+  if (!item.url) {
+    toast.show('文件地址为空')
+    return
+  }
+  uni.navigateTo({
+    url: `/pages/common/preview?fileUrl=${encodeURIComponent(item.url)}&fileName=${encodeURIComponent(item.name || item.path || '文件')}`,
+  })
+}
 const list = ref<FileVO[]>([]) // 列表数据
 const pagingRef = ref<any>() // 分页组件引用
 const queryParams = ref<Record<string, any>>({}) // 查询参数

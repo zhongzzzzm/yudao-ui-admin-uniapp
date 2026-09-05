@@ -10,9 +10,16 @@ export const useThemeStore = defineStore(
 
     /** 主题变量 */
     const themeVars = ref<ConfigProviderThemeVars>({
-      // colorTheme: 'red',
-      // buttonPrimaryBgColor: '#07c160',
-      // buttonPrimaryColor: '#07c160',
+      // 品牌主色：与设计方案 design token 一致（#018d71）。
+      // wot 的 .wot-theme-light 会把 primary 色阶指向默认蓝，这里以内联样式覆盖（优先级高于主题类）。
+      primary1: '#e6f4f1',
+      primary2: '#c2e5de',
+      primary3: '#9dd6ca',
+      primary4: '#79c7b6',
+      primary5: '#26a184',
+      primary6: '#018d71',
+      primary7: '#01725b',
+      primary8: '#015947',
     })
 
     /** 设置主题变量 */

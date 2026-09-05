@@ -11,8 +11,10 @@
 
 :root,
 page {
-  // 修改按主题色
-  // --wot-color-theme: #37c2bc;
+  // 主题色：与设计方案 design token 一致（#018d71）
+  // --wot-primary-6：@wot-ui 组件主色（按钮/选择器/标签等）；--wot-color-theme：tabbar/uno/yd-* 自研组件用
+  --wot-primary-6: #018d71;
+  --wot-color-theme: #018d71;
 
   // 修改按钮背景色
   // --wot-button-primary-bg-color: green;

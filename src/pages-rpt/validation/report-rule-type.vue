@@ -164,6 +164,7 @@ const canCreate = hasAccessByCodes(['validation:report-rule-type:create'])
 const canUpdate = hasAccessByCodes(['validation:report-rule-type:update'])
 const canDelete = hasAccessByCodes(['validation:report-rule-type:delete'])
 const canValidate = hasAccessByCodes(['validation:report-rule-type:validation'])
+const canViewReport = hasAccessByCodes(['validation:report-rule-type:viewReport'])
 
 const statusOptions = getDictOptions(DICT_TYPE.COMMON_STATUS)
 
@@ -204,6 +205,9 @@ const actionOptions = computed(() => {
   if (canValidate) {
     actions.push({ name: '校验', key: 'validate' })
   }
+  if (canViewReport) {
+    actions.push({ name: '查看报表', key: 'viewReports' })
+  }
   actions.push({ name: '查看规则', key: 'viewRules' })
   if (canDelete) {
     actions.push({ name: '删除', key: 'delete', color: '#ee0a24' })
@@ -229,6 +233,10 @@ function handleAction({ item }: { item: { key: string } }) {
     }
     case 'validate': {
       openValidate(target)
+      break
+    }
+    case 'viewReports': {
+      uni.navigateTo({ url: `/pages-rpt/validation/report-list?category=${target.id}` })
       break
     }
     case 'viewRules': {

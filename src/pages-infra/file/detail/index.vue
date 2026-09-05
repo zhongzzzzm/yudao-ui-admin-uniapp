@@ -36,8 +36,8 @@
     <!-- 底部操作按钮 -->
     <view class="yd-detail-footer">
       <view class="yd-detail-footer-actions">
-        <wd-button class="flex-1" type="primary" variant="plain" @click="openFile(formData?.url)">
-          打开
+        <wd-button class="flex-1" type="primary" variant="plain" @click="previewFile">
+          在线预览
         </wd-button>
         <wd-button class="flex-1" type="info" @click="handleCopyUrl">
           复制链接
@@ -62,7 +62,7 @@ import { deleteFile, getFile } from '@/api/infra/file'
 import { useAccess } from '@/hooks/useAccess'
 import { delay, navigateBackPlus } from '@/utils'
 import { formatDateTime } from '@/utils/date'
-import { formatFileSize, openFile } from '@/utils/download'
+import { formatFileSize } from '@/utils/download'
 
 const props = defineProps<{
   id?: number | any
@@ -97,6 +97,17 @@ async function getDetail() {
   } finally {
     toast.close()
   }
+}
+
+/** 在线预览（kkfileview，预览失败时预览页内有下载兜底） */
+function previewFile() {
+  if (!formData.value?.url) {
+    toast.show('文件地址为空')
+    return
+  }
+  uni.navigateTo({
+    url: `/pages/common/preview?fileUrl=${encodeURIComponent(formData.value.url)}&fileName=${encodeURIComponent(formData.value.name || formData.value.path || '文件')}`,
+  })
 }
 
 /** 复制链接 */

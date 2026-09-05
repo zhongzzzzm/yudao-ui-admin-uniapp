@@ -39,7 +39,7 @@
             </view>
             <view class="mb-12rpx flex items-center text-28rpx text-[#666]">
               <text class="mr-8rpx shrink-0 text-[#999]">公告内容：</text>
-              <text class="min-w-0 flex-1 truncate">{{ item.content }}</text>
+              <text class="min-w-0 flex-1 truncate">{{ stripHtml(item.content) || '-' }}</text>
             </view>
             <view class="mb-12rpx flex items-center text-28rpx text-[#666]">
               <text class="mr-8rpx text-[#999]">公告类型：</text>
@@ -91,6 +91,14 @@ const queryParams = ref<Record<string, any>>({}) // 查询参数
 /** 返回上一页 */
 function handleBack() {
   navigateBackPlus()
+}
+
+/** 剥离富文本 HTML 标签，取纯文本摘要（公告内容是富文本，直接展示会露出标签） */
+function stripHtml(html?: string): string {
+  if (!html) {
+    return ''
+  }
+  return html.replace(/<[^>]+>/g, '').replace(/&nbsp;/g, ' ').trim()
 }
 
 /** 查询通知公告列表 */

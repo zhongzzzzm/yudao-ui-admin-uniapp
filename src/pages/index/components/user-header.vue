@@ -2,7 +2,10 @@
   <view class="mx-20rpx mt-20rpx overflow-hidden rounded-16rpx bg-white">
     <view class="flex items-center p-24rpx">
       <view class="avatar-wrapper mr-20rpx">
-        <wd-img :src="userInfo.avatar" width="100rpx" height="100rpx" mode="aspectFill" round />
+        <wd-img
+          :key="avatarSrc" :src="avatarSrc" width="100rpx" height="100rpx" mode="aspectFill" round
+          @error="avatarSrc = DEFAULT_AVATAR"
+        />
       </view>
       <view class="flex-1">
         <view class="text-32rpx text-#333 font-500">
@@ -26,6 +29,13 @@ defineOptions({
 
 const userStore = useUserStore()
 const { userInfo } = storeToRefs(userStore)
+
+/** 头像加载失败（如历史 CDN 地址失效）回退默认头像 */
+const DEFAULT_AVATAR = '/static/images/default-avatar.png'
+const avatarSrc = ref(userInfo.value.avatar || DEFAULT_AVATAR)
+watch(() => userInfo.value.avatar, (val) => {
+  avatarSrc.value = val || DEFAULT_AVATAR
+})
 
 /** 根据时间获取问候语 */
 const greeting = computed(() => {

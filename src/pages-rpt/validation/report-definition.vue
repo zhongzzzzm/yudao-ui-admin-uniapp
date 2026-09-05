@@ -193,6 +193,14 @@ function statusLabel(status?: number) {
 const name = ref('')
 const list = ref<ReportDefinitionVO[]>([])
 const pagingRef = ref<any>()
+/** 报表管理「查看定义」跳入时按报表过滤 */
+const filterReportId = ref<number>()
+
+onLoad((query) => {
+  if (query?.reportId) {
+    filterReportId.value = Number(query.reportId)
+  }
+})
 
 function handleSearch() {
   pagingRef.value?.reload()
@@ -200,7 +208,7 @@ function handleSearch() {
 
 async function queryList(pageNo: number, pageSize: number) {
   try {
-    const data = await getReportDefinitionPage({ pageNo, pageSize, name: name.value.trim() || undefined })
+    const data = await getReportDefinitionPage({ pageNo, pageSize, name: name.value.trim() || undefined, reportId: filterReportId.value })
     pagingRef.value?.completeByTotal(data.list, data.total)
   } catch {
     pagingRef.value?.complete(false)

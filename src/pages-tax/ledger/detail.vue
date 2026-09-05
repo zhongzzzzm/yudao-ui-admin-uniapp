@@ -205,6 +205,7 @@ import {
 } from '@/api/tax/ledger'
 import { uploadFile } from '@/api/infra/file'
 import { useAccess } from '@/hooks/useAccess'
+import { MAX_UPLOAD_SIZE_MB } from '@/utils/uploadValidate'
 import { getDictLabel, getDictOptions } from '@/hooks/useDict'
 import { DICT_TYPE } from '@/utils/constants'
 import { formatDateTime } from '@/utils/date'
@@ -355,26 +356,26 @@ function handleUploadAction({ item }: { item: { type: string } }) {
     uni.chooseImage({
       count: 1,
       sourceType: ['camera'],
-      success: res => handleFileChosen(res.tempFilePaths[0]),
+      success: res => handleFileChosen(res.tempFilePaths[0], undefined, res.tempFiles?.[0]?.size),
     })
   } else if (item.type === 'album') {
     uni.chooseImage({
       count: 1,
       sourceType: ['album'],
-      success: res => handleFileChosen(res.tempFilePaths[0]),
+      success: res => handleFileChosen(res.tempFilePaths[0], undefined, res.tempFiles?.[0]?.size),
     })
   } else {
     // #ifdef MP-WEIXIN
     uni.chooseMessageFile({
       count: 1,
       type: 'file',
-      success: res => handleFileChosen(res.tempFiles[0].path, res.tempFiles[0].name),
+      success: res => handleFileChosen(res.tempFiles[0].path, res.tempFiles[0].name, res.tempFiles[0].size),
     })
     // #endif
     // #ifdef H5
     uni.chooseFile?.({
       count: 1,
-      success: (res: any) => handleFileChosen(res.tempFilePaths[0]),
+      success: (res: any) => handleFileChosen(res.tempFilePaths[0], res.tempFiles?.[0]?.name, res.tempFiles?.[0]?.size),
     })
     // #endif
     // #ifdef APP-PLUS
@@ -383,8 +384,13 @@ function handleUploadAction({ item }: { item: { type: string } }) {
   }
 }
 
-function handleFileChosen(filePath?: string, fileName?: string) {
+function handleFileChosen(filePath?: string, fileName?: string, fileSize?: number) {
   if (!filePath) {
+    return
+  }
+  // 大小上限本地即时校验（类型白名单在确认上传时校验）
+  if (fileSize != null && fileSize > MAX_UPLOAD_SIZE_MB * 1024 * 1024) {
+    toast.show(`文件大小不能超过 ${MAX_UPLOAD_SIZE_MB}MB`)
     return
   }
   pendingFilePath.value = filePath

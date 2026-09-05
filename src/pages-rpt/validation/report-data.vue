@@ -26,10 +26,10 @@
         <template v-else>
           <view class="mb-20rpx rounded-16rpx bg-white p-24rpx shadow-sm">
             <view class="text-28rpx text-[#333] font-500">
-              {{ row.reportName || '报表数据' }}
+              {{ row.reportName || fallbackName || '报表数据' }}
             </view>
             <view class="mt-8rpx text-24rpx text-[#999]">
-              数据日期：{{ row.batchDate || '-' }} · 行号 {{ row.rowIndex ?? '-' }}
+              数据日期：{{ row.batchDate || fallbackBatchDate || '-' }} · 行号 {{ row.rowIndex ?? '-' }}
             </view>
           </view>
 
@@ -61,7 +61,7 @@
 import type { ReportDataVO } from '@/api/validation/reportData'
 import { navigateBackPlus } from '@/utils'
 import { computed, ref } from 'vue'
-import { getReportDataPage } from '@/api/validation/reportData'
+import { getReportData, getReportDataPage } from '@/api/validation/reportData'
 
 defineOptions({
   name: 'ValidationReportDataRow',
@@ -78,7 +78,10 @@ definePage({
   },
 })
 
-const query = ref<{ reportId?: number, batchId?: number, rowIndex?: number }>({})
+const query = ref<{ id?: number, reportId?: number, batchId?: number, rowIndex?: number }>({})
+/** 列表带入的展示字段（get 接口无联表字段时的兜底） */
+const fallbackName = ref('')
+const fallbackBatchDate = ref('')
 const loading = ref(false)
 const loadFailed = ref(false)
 const row = ref<ReportDataVO>()
@@ -107,10 +110,15 @@ const rowEntries = computed<{ key: string, value: string }[]>(() => {
 })
 
 async function load() {
-  const { reportId, batchId, rowIndex } = query.value
   loading.value = true
   loadFailed.value = false
   try {
+    if (query.value.id) {
+      // 优先按 id 直查（列表「查看明细」入口）
+      row.value = await getReportData(query.value.id)
+      return
+    }
+    const { reportId, batchId, rowIndex } = query.value
     const data = await getReportDataPage({ pageNo: 1, pageSize: 10, reportId, batchId, rowIndex })
     row.value = data.list[0]
   } catch {
@@ -121,7 +129,10 @@ async function load() {
 }
 
 onLoad((q) => {
+  fallbackName.value = q?.reportName ? decodeURIComponent(q.reportName) : ''
+  fallbackBatchDate.value = q?.batchDate ? decodeURIComponent(q.batchDate) : ''
   query.value = {
+    id: q?.id ? Number(q.id) : undefined,
     reportId: q?.reportId ? Number(q.reportId) : undefined,
     batchId: q?.batchId ? Number(q.batchId) : undefined,
     rowIndex: q?.rowIndex != null && q.rowIndex !== 'undefined' ? Number(q.rowIndex) : undefined,

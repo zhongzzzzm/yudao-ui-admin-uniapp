@@ -35,7 +35,7 @@
       <view class="yd-detail-footer-actions">
         <wd-button
           v-if="hasAccessByCodes(['infra:job:update'])"
-          class="flex-1" type="warning" @click="handleEdit"
+          class="flex-1" type="primary" @click="handleEdit"
         >
           编辑
         </wd-button>

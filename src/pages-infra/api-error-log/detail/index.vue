@@ -66,7 +66,7 @@
         <wd-button class="flex-1" type="success" :loading="processing" @click="handleProcess(InfraApiErrorLogProcessStatusEnum.DONE)">
           已处理
         </wd-button>
-        <wd-button class="flex-1" type="warning" :loading="processing" @click="handleProcess(InfraApiErrorLogProcessStatusEnum.IGNORE)">
+        <wd-button class="flex-1" type="primary" :loading="processing" @click="handleProcess(InfraApiErrorLogProcessStatusEnum.IGNORE)">
           已忽略
         </wd-button>
       </view>

@@ -37,7 +37,7 @@
       <view class="yd-detail-footer-actions">
         <wd-button
           v-if="hasAccessByCodes(['system:user:update'])"
-          class="flex-1" type="warning" @click="handleEdit"
+          class="flex-1" type="primary" @click="handleEdit"
         >
           编辑
         </wd-button>

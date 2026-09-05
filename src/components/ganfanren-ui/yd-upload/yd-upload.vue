@@ -9,6 +9,7 @@
       :disabled="disabled"
       :max-size="maxSizeBytes"
       :before-upload="beforeUpload"
+      :before-preview="beforePreview"
       :image-mode="imageMode"
       @change="handleChange"
       @oversize="handleOversize"
@@ -187,5 +188,20 @@ function handleRemove(event: any) {
 /** 文件超出大小限制 */
 function handleOversize() {
   uni.showToast({ icon: 'none', title: `文件大小不能超过 ${props.fileSize}MB` })
+}
+
+/**
+ * 接管文件预览：非图片文件默认走 uni.openDocument（对远程 URL 无效），
+ * 这里拦截改为 kkfileview 在线预览（预览失败时预览页内有下载兜底）；
+ * 返回 false 阻断 wd-upload 默认行为。图片/视频仍走 wd-upload 默认预览。
+ */
+function beforePreview(arg: { file: UploadFileItem }) {
+  const url = resolveUrl(arg.file)
+  if (!url) {
+    return false
+  }
+  const name = arg.file.name || getFileNameFromUrl(url) || '文件'
+  uni.navigateTo({ url: `/pages/common/preview?fileUrl=${encodeURIComponent(url)}&fileName=${encodeURIComponent(name)}` })
+  return false
 }
 </script>

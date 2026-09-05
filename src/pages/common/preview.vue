@@ -17,13 +17,31 @@
         重试预览
       </wd-button>
     </view>
-    <!-- 预览 -->
-    <web-view v-else-if="previewUrl" :src="previewUrl" />
+    <!-- 图片：直接展示原图（不依赖 kkFileView），点击可缩放 -->
+    <view v-else-if="isImage" class="h-100vh w-full flex items-center justify-center bg-[#f0f2f5]" @click="previewImage">
+      <image :src="fileUrl" mode="aspectFit" class="h-90vh w-full" />
+    </view>
+    <!-- 文档：kkFileView 预览 -->
+    <template v-else-if="previewUrl">
+      <web-view :src="previewUrl" />
+      <!-- #ifdef H5 -->
+      <!-- 悬浮兜底：kkFileView 服务不可达时 web-view 会黑屏，保留下载/重试出路 -->
+      <view class="absolute right-24rpx top-16rpx z-1000 flex gap-12rpx">
+        <wd-button size="small" plain custom-class="!bg-white/90" @click="handleDownload">
+          下载
+        </wd-button>
+        <wd-button size="small" plain custom-class="!bg-white/90" @click="loadPreview">
+          重试
+        </wd-button>
+      </view>
+      <!-- #endif -->
+    </template>
   </view>
 </template>
 
 <script lang="ts" setup>
 import { getFilePreviewUrl } from '@/api/kkfileview'
+import { computed } from 'vue'
 
 defineOptions({
   name: 'CommonFilePreview',
@@ -40,6 +58,21 @@ const failed = ref(false)
 const previewUrl = ref('')
 const fileUrl = ref('')
 const fileName = ref('')
+
+/** 图片类型直接展示原图，不依赖 kkFileView 服务 */
+const IMAGE_EXTS = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'bmp']
+const isImage = computed(() => {
+  const name = decodeURIComponent(fileUrl.value.split('?')[0])
+  const ext = name.includes('.') ? name.split('.').pop()!.toLowerCase() : ''
+  return IMAGE_EXTS.includes(ext)
+})
+
+/** 点击图片调系统预览（支持缩放） */
+function previewImage() {
+  if (fileUrl.value) {
+    uni.previewImage({ urls: [fileUrl.value] })
+  }
+}
 
 /** 获取预览地址并打开 */
 async function loadPreview() {
@@ -81,6 +114,11 @@ onLoad((query) => {
   fileName.value = decodeURIComponent(query?.fileName || '')
   if (fileName.value) {
     uni.setNavigationBarTitle({ title: fileName.value })
+  }
+  // 图片直接展示，不请求 kkFileView
+  if (isImage.value) {
+    loading.value = false
+    return
   }
   loadPreview()
 })

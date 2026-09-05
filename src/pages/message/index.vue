@@ -79,12 +79,15 @@ import type { NotifyMessage } from '@/api/system/notify/message'
 import { useDialog } from '@wot-ui/ui/components/wd-dialog'
 import { useToast } from '@wot-ui/ui/components/wd-toast'
 import { ref } from 'vue'
+import { onShow } from '@dcloudio/uni-app'
 import {
   getMyNotifyMessagePage,
+  getUnreadNotifyMessageCount,
   updateAllNotifyMessageRead,
   updateNotifyMessageRead,
 } from '@/api/system/notify/message'
 import { getDictLabel } from '@/hooks/useDict'
+import { tabbarStore } from '@/tabbar/store'
 import { DICT_TYPE } from '@/utils/constants'
 import { formatDateTime } from '@/utils/date'
 import DetailPopup from './components/detail-popup.vue'
@@ -99,6 +102,20 @@ definePage({
 
 const toast = useToast()
 const dialog = useDialog()
+
+/** 刷新消息 tab 未读角标（已读/全部已读后同步更新） */
+async function refreshBadge() {
+  try {
+    const count = await getUnreadNotifyMessageCount()
+    tabbarStore.setTabbarItemBadge(2, count > 0 ? count : 0)
+  } catch {
+    // 角标刷新失败不影响页面
+  }
+}
+
+onShow(() => {
+  refreshBadge()
+})
 const list = ref<NotifyMessage[]>([]) // 列表数据
 const pagingRef = ref<any>() // 分页组件引用
 const queryParams = ref<Record<string, any>>({}) // 查询参数
@@ -154,6 +171,7 @@ async function handleReadOne(item: NotifyMessage, showToast = true) {
   if (showToast) {
     toast.success('已标记为已读')
   }
+  refreshBadge()
 }
 
 /** 标记全部已读 */
@@ -168,6 +186,7 @@ async function handleReadAll() {
   }
   await updateAllNotifyMessageRead()
   toast.success('全部已读成功')
+  refreshBadge()
   // 刷新列表
   reload()
 }
