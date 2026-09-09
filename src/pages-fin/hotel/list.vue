@@ -3,8 +3,8 @@
     title="住宿单拆分"
     :fetch-page="getBxHotelPage"
     :source-labels="[
-      { key: 'contacts', label: '通讯录' },
       { key: 'hotel', label: '住宿单' },
+      { key: 'ledger', label: '出差台账' },
     ]"
     download-permission="fin:bx-hotel:downloadResult"
   />
