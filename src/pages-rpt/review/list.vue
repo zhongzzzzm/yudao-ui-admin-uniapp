@@ -1,8 +1,16 @@
 <template>
   <view class="yd-page-container yd-page-container-paging">
     <wd-navbar
-      left-arrow title="复核工作台" placeholder safe-area-inset-top fixed @click-left="handleBack"
+      left-arrow title="复核回看" placeholder safe-area-inset-top fixed @click-left="handleBack"
     />
+
+    <!-- 复核动作已接入审批引擎，本页仅回看结论 -->
+    <view class="flex items-center gap-8rpx bg-[#fff7e6] px-24rpx py-16rpx">
+      <wd-icon name="info-circle" size="30rpx" color="#fa8c16" />
+      <text class="flex-1 text-24rpx text-[#ad6800]">
+        复核请在电脑端「流程管理-我的待办」处理，此处仅回看结论
+      </text>
+    </view>
 
     <!-- 状态切换 -->
     <wd-tabs v-model="reviewStatus" sticky @change="handleStatusChange">

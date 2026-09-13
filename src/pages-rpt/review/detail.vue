@@ -20,6 +20,14 @@
       </view>
 
       <template v-else>
+        <!-- 复核已接入审批引擎提示：动作入口在 PC 端我的待办，本页仅回看 -->
+        <view class="mx-24rpx mt-24rpx flex items-start gap-12rpx rounded-12rpx bg-[#fff7e6] px-20rpx py-16rpx">
+          <wd-icon name="info-circle" size="32rpx" color="#fa8c16" class="mt-2rpx" />
+          <text class="flex-1 text-24rpx text-[#ad6800]">
+            复核已接入审批引擎，请在电脑端「流程管理-我的待办」处理；本页仅供回看复核结论与审批进度
+          </text>
+        </view>
+
         <!-- 复核信息 -->
         <view class="m-24rpx overflow-hidden rounded-16rpx bg-white p-24rpx shadow-sm">
           <view class="mb-16rpx flex items-center justify-between">
@@ -27,7 +35,7 @@
               {{ review.templateName || '底稿复核' }}
             </text>
             <wd-tag
-              :type="review.reviewStatus === 1 ? (review.reviewResult === 2 ? 'error' : 'success') : 'warning'"
+              :type="review.reviewStatus === 1 ? (review.reviewResult === 2 ? 'danger' : 'success') : 'warning'"
               plain
               class="ml-16rpx flex-shrink-0"
             >
@@ -71,48 +79,42 @@
           </view>
           <wd-icon name="arrow-right" size="40rpx" color="#bbb" />
         </view>
+
+        <!-- 查看审批流程入口 -->
+        <view
+          class="mx-24rpx mt-24rpx flex items-center justify-between rounded-16rpx bg-white p-24rpx shadow-sm"
+          @click="openFlow"
+        >
+          <view>
+            <view class="text-28rpx text-[#333]">
+              查看流程
+            </view>
+            <view class="mt-4rpx text-24rpx text-[#999]">
+              查看本部门复核的审批环节与结论
+            </view>
+          </view>
+          <wd-icon name="arrow-right" size="40rpx" color="#bbb" />
+        </view>
         <view class="h-200rpx" />
       </template>
     </scroll-view>
 
-    <!-- 底部复核操作栏（有复核权限且待复核时展示） -->
-    <view
-      v-if="review && review.reviewStatus === 0 && canReview"
-      class="absolute inset-x-0 bottom-0 border-t border-t-[#f0f0f0] bg-white px-24rpx pb-[env(safe-area-inset-bottom)] pt-16rpx"
+    <!-- 查看流程弹层 -->
+    <wd-popup
+      v-model="showFlow"
+      position="bottom"
+      custom-class="rounded-t-24rpx"
+      closable
+      safe-area-inset-bottom
+      @close="showFlow = false"
     >
-      <view class="flex gap-20rpx">
-        <wd-button class="flex-1" type="error" plain :disabled="acting" @click="openSubmit(2)">
-          驳回
-        </wd-button>
-        <wd-button class="flex-1" type="success" :loading="acting && submittingResult === 1" :disabled="acting" @click="openSubmit(1)">
-          通过
-        </wd-button>
-      </view>
-    </view>
-
-    <!-- 复核意见弹层 -->
-    <wd-popup v-model="showSubmit" position="bottom" custom-class="rounded-t-24rpx" closable safe-area-inset-bottom>
       <view class="p-24rpx pb-40rpx">
         <view class="mb-24rpx text-32rpx text-[#333] font-500">
-          {{ submittingResult === 1 ? '确认复核无误' : '填写驳回意见' }}
+          查看流程
         </view>
-        <wd-textarea
-          v-model="submitOpinion"
-          :placeholder="submittingResult === 1 ? '补充说明（选填）' : '请填写驳回意见（必填）'"
-          :maxlength="200"
-          show-word-limit
-          custom-class="bg-[#f7f8f9]"
-        />
-        <wd-button
-          block
-          class="mt-24rpx"
-          type="primary"
-          :loading="acting"
-          :disabled="!canConfirmSubmit"
-          @click="handleSubmit"
-        >
-          确认提交
-        </wd-button>
+        <scroll-view class="max-h-60vh" scroll-y>
+          <fg-bpm-flow :items="flowItems" :loading="flowLoading" />
+        </scroll-view>
       </view>
     </wd-popup>
   </view>
@@ -120,11 +122,11 @@
 
 <script lang="ts" setup>
 import type { FilingReviewVO } from '@/api/rpt/review'
+import type { FgBpmFlowItem } from '@/components/fg-bpm-flow/fg-bpm-flow.vue'
 import { navigateBackPlus } from '@/utils'
 import { useToast } from '@wot-ui/ui/components/wd-toast'
-import { computed, ref } from 'vue'
-import { getFilingReviewListByFiling, submitFilingReview } from '@/api/rpt/review'
-import { useAccess } from '@/hooks/useAccess'
+import { ref } from 'vue'
+import { getFilingReviewFlowByFiling, getFilingReviewListByFiling } from '@/api/rpt/review'
 import { formatDateTime } from '@/utils/date'
 
 defineOptions({
@@ -143,18 +145,12 @@ definePage({
 })
 
 const toast = useToast()
-const { hasAccessByCodes } = useAccess()
-
 const loading = ref(true)
-const acting = ref(false)
 const review = ref<FilingReviewVO | null>(null)
 const reviewId = ref<number>()
 const filingId = ref<number>()
 const deptId = ref<number>()
 const batchId = ref<number>()
-
-/** 复核权限（rpt:filing-review:submit） */
-const canReview = computed(() => hasAccessByCodes(['rpt:filing-review:submit']))
 
 async function loadDetail() {
   if (!filingId.value) {
@@ -178,47 +174,28 @@ async function loadDetail() {
   }
 }
 
-/** 打开复核弹层（1=通过 2=驳回） */
-const showSubmit = ref(false)
-const submittingResult = ref<1 | 2>(1)
-const submitOpinion = ref('')
+/** 查看流程弹层（按当前复核记录定位到对应部门的实例） */
+const showFlow = ref(false)
+const flowLoading = ref(false)
+const flowItems = ref<FgBpmFlowItem[]>([])
 
-function openSubmit(result: 1 | 2) {
-  submittingResult.value = result
-  submitOpinion.value = ''
-  showSubmit.value = true
-}
-
-/** 驳回必须填写意见；通过可不填 */
-const canConfirmSubmit = computed(() => {
-  if (submittingResult.value === 2) {
-    return submitOpinion.value.trim().length > 0
+async function openFlow() {
+  if (!filingId.value || !review.value) {
+    return
   }
-  return true
-})
-
-/** 提交复核：成功后返回列表并通知刷新 */
-async function handleSubmit() {
-  acting.value = true
+  showFlow.value = true
+  flowLoading.value = true
   try {
-    await submitFilingReview({
-      filingId: filingId.value!,
-      deptId: review.value!.deptId,
-      reviewResult: submittingResult.value,
-      reviewOpinion: submitOpinion.value.trim() || undefined,
-    })
-    showSubmit.value = false
-    toast.show(submittingResult.value === 1 ? '复核完成' : '已驳回')
-    setTimeout(() => {
-      const pages = getCurrentPages()
-      const prev = pages[pages.length - 2]
-      prev?.$vm && (prev.$vm as any).exposed?.refresh?.()
-      uni.navigateBack()
-    }, 600)
+    const flows = await getFilingReviewFlowByFiling(filingId.value)
+    const current = flows.find(item => item.reviewId === review.value!.id)
+      || flows.find(item => item.deptId === review.value!.deptId)
+    flowItems.value = current
+      ? [{ label: current.deptName || undefined, detail: current.flow ?? null }]
+      : []
   } catch (e: any) {
-    toast.show(e?.message || '提交失败，请重试')
+    flowItems.value = []
   } finally {
-    acting.value = false
+    flowLoading.value = false
   }
 }
 

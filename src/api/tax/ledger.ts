@@ -1,4 +1,5 @@
 import type { PageParam, PageResult } from '@/http/types'
+import type { BpmInstanceDetailVO } from '@/api/bpm/flow'
 import { http } from '@/http/http'
 
 /** 办税台账分页请求参数 */
@@ -8,7 +9,8 @@ export interface TaxLedgerPageReqVO extends PageParam {
   taxPerson?: string // 办税人员（模糊匹配）
   taxType?: number // 税种
   period?: string // 所属期
-  status?: number // 状态：0待办 1已办结
+  status?: number // 状态：0待办理（办理流在途） 1已办理（提交办结）
+  statusList?: number[] // 状态集合（任一命中）：两态下通常单值，保留集合能力兼容
 }
 
 /** 办税台账 */
@@ -112,4 +114,14 @@ export interface CompanySimpleVO {
 /** 获得公司精简列表 */
 export function getCompanySimpleList() {
   return http.get<CompanySimpleVO[]>('/tax/company/simple-list')
+}
+
+/** 发起办理（待办理且无进行中实例时发起/重提；撤回遗留实例则重新提交） */
+export function submitTaxLedgerReview(id: number) {
+  return http.post<boolean>('/tax/ledger/submit-review', undefined, { id })
+}
+
+/** 查看办理流程（审批实例 + 任务时间线；未发起时为空列表） */
+export function getTaxLedgerReviewFlow(id: number) {
+  return http.get<BpmInstanceDetailVO[]>('/tax/ledger/review-flow', { id })
 }

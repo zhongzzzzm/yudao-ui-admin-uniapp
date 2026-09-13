@@ -10,6 +10,7 @@ declare module 'vue' {
     DeptFormPicker: typeof import('./../components/system-select/dept-form-picker.vue')['default']
     DeptSearchPicker: typeof import('./../components/system-select/dept-search-picker.vue')['default']
     DictTag: typeof import('./../components/dict-tag/dict-tag.vue')['default']
+    FgBpmFlow: typeof import('./../components/fg-bpm-flow/fg-bpm-flow.vue')['default']
     UserFormPicker: typeof import('./../components/system-select/user-form-picker.vue')['default']
     UserPicker: typeof import('./../components/system-select/user-picker.vue')['default']
     UserSearchPicker: typeof import('./../components/system-select/user-search-picker.vue')['default']

@@ -20,12 +20,19 @@
       </view>
 
       <template v-else>
+        <!-- 办理引导条：当前用户是该任务办理节点处理人 -->
+        <view v-if="canSubmitHandle" class="mx-24rpx mt-24rpx flex items-center gap-16rpx rounded-16rpx bg-[#e6f7f1] p-20rpx">
+          <wd-icon name="warning-circle" size="36rpx" color="#018d71" />
+          <view class="flex-1 text-24rpx text-[#018d71]">
+            该任务等待您办理：请填写申报信息、上传申报表/完税证明后提交办理（提交即办结，不允许驳回）
+          </view>
+        </view>
         <!-- 基本信息 -->
         <view class="m-24rpx overflow-hidden rounded-16rpx bg-white p-24rpx shadow-sm">
           <view class="mb-16rpx flex items-center justify-between">
             <text class="flex-1 text-32rpx text-[#333] font-semibold">{{ ledger.companyName || '-' }}</text>
             <view class="ml-16rpx flex flex-shrink-0 items-center gap-12rpx">
-              <wd-tag :type="ledger.status === 0 ? 'warning' : 'success'" plain>
+              <wd-tag :type="statusTagType(ledger.status)" plain>
                 {{ getDictLabel(DICT_TYPE.TAX_LEDGER_STATUS, ledger.status) || '未知' }}
               </wd-tag>
               <view v-if="canEdit" class="p-8rpx" @click="openRemarkEditor">
@@ -129,9 +136,59 @@
             暂无附件
           </view>
         </view>
-        <view class="h-40rpx" />
+        <!-- 办理操作栏占位，避免内容被遮挡 -->
+        <view :class="canSubmitHandle ? 'h-200rpx' : 'h-40rpx'" />
+        <!-- 查看办理流程入口（两态均可看办理记录） -->
+        <view
+          class="mx-24rpx mb-24rpx flex items-center justify-between rounded-16rpx bg-white p-24rpx shadow-sm"
+          @click="openFlow"
+        >
+          <view>
+            <view class="text-28rpx text-[#333]">
+              查看流程
+            </view>
+            <view class="mt-4rpx text-24rpx text-[#999]">
+              查看办理流程与办理记录
+            </view>
+          </view>
+          <wd-icon name="arrow-right" size="40rpx" color="#bbb" />
+        </view>
       </template>
     </scroll-view>
+
+    <!-- 办理中：底部操作栏（填报信息 + 提交办理） -->
+    <view
+      v-if="canSubmitHandle"
+      class="absolute inset-x-0 bottom-0 z-10 border-t border-t-[#f0f0f0] bg-white px-24rpx pb-[env(safe-area-inset-bottom)] pt-16rpx"
+    >
+      <view class="flex gap-20rpx">
+        <wd-button plain block type="primary" :disabled="submitting" @click="openFormEditor">
+          填报申报信息
+        </wd-button>
+        <wd-button block type="primary" :loading="submitting" :disabled="submitting" @click="openSubmitDialog">
+          提交办理
+        </wd-button>
+      </view>
+    </view>
+
+    <!-- 查看流程弹层 -->
+    <wd-popup
+      v-model="showFlow"
+      position="bottom"
+      custom-class="rounded-t-24rpx"
+      closable
+      safe-area-inset-bottom
+      @close="showFlow = false"
+    >
+      <view class="p-24rpx pb-40rpx">
+        <view class="mb-24rpx text-32rpx text-[#333] font-500">
+          查看流程
+        </view>
+        <scroll-view class="max-h-60vh" scroll-y>
+          <fg-bpm-flow :items="flowItems" :loading="flowLoading" />
+        </scroll-view>
+      </view>
+    </wd-popup>
 
     <!-- 上传来源选择 -->
     <wd-action-sheet
@@ -162,6 +219,69 @@
         </wd-button>
       </view>
     </wd-popup>
+    <!-- 填报申报信息（走引擎 save-fields：字段权限校验 + old→new 留痕） -->
+    <wd-popup v-model="showForm" position="bottom" custom-class="rounded-t-24rpx" closable safe-area-inset-bottom>
+      <view class="p-24rpx pb-40rpx">
+        <view class="mb-24rpx text-32rpx text-[#333] font-500">
+          填报申报信息
+        </view>
+        <view class="space-y-20rpx">
+          <wd-datetime-picker v-model="formDateTs" type="date" label="申报日期" />
+          <wd-input v-model="formDraft.taxAmount" label="应纳税额（元）" placeholder="请输入金额" type="digit" />
+          <wd-input v-model="formDraft.paidAmount" label="已缴金额（元）" placeholder="请输入金额" type="digit" />
+          <view>
+            <view class="mb-8rpx text-26rpx text-[#666]">
+              备注
+            </view>
+            <textarea
+              v-model="formDraft.remark"
+              :maxlength="200"
+              placeholder="请输入备注"
+              class="min-h-120rpx w-full rounded-12rpx bg-[#f7f8f9] p-20rpx text-26rpx"
+            />
+          </view>
+        </view>
+        <wd-button
+          block
+          class="mt-32rpx"
+          type="primary"
+          :loading="formSaving"
+          :disabled="formSaving"
+          @click="saveForm"
+        >
+          保存
+        </wd-button>
+      </view>
+    </wd-popup>
+
+    <!-- 提交办理（轻确认 + 办理说明选填；提交即办结，不允许驳回） -->
+    <wd-popup v-model="showSubmit" position="bottom" custom-class="rounded-t-24rpx" closable safe-area-inset-bottom>
+      <view class="p-24rpx pb-40rpx">
+        <view class="mb-12rpx text-32rpx text-[#333] font-500">
+          提交办理
+        </view>
+        <view class="mb-16rpx text-24rpx text-[#999]">
+          提交后任务即办理完成并办结，单据将锁定；办理任务不允许驳回。
+        </view>
+        <textarea
+          v-model="submitComment"
+          :maxlength="200"
+          placeholder="办理说明（选填）"
+          class="min-h-120rpx w-full rounded-12rpx bg-[#f7f8f9] p-20rpx text-26rpx"
+        />
+        <wd-button
+          block
+          class="mt-32rpx"
+          type="primary"
+          :loading="submitting"
+          :disabled="submitting"
+          @click="confirmSubmit"
+        >
+          确认提交
+        </wd-button>
+      </view>
+    </wd-popup>
+
     <!-- 编辑备注 -->
     <wd-popup v-model="showRemark" position="bottom" custom-class="rounded-t-24rpx" closable safe-area-inset-bottom>
       <view class="p-24rpx pb-40rpx">
@@ -194,13 +314,18 @@
 
 <script lang="ts" setup>
 import type { TaxLedgerMaterialVO, TaxLedgerVO } from '@/api/tax/ledger'
+import type { FgBpmFlowItem } from '@/components/fg-bpm-flow/fg-bpm-flow.vue'
 import { navigateBackPlus } from '@/utils'
 import { useToast } from '@wot-ui/ui/components/wd-toast'
-import { computed, ref } from 'vue'
+import { useDialog } from '@wot-ui/ui/components/wd-dialog'
+import { computed, ref, storeToRefs } from 'vue'
+import { saveBpmTaskFields, submitBpmTaskHandle } from '@/api/bpm/task'
+import { useUserStore } from '@/store'
 import {
   createTaxLedgerMaterialBatch,
   getTaxLedger,
   getTaxLedgerMaterialListByLedger,
+  getTaxLedgerReviewFlow,
   updateTaxLedger,
 } from '@/api/tax/ledger'
 import { uploadFile } from '@/api/infra/file'
@@ -226,6 +351,7 @@ definePage({
 })
 
 const toast = useToast()
+const dialog = useDialog()
 const { hasAccessByCodes } = useAccess()
 
 const ledgerId = ref<number>()
@@ -233,10 +359,17 @@ const loading = ref(true)
 const ledger = ref<TaxLedgerVO | null>(null)
 const materials = ref<TaxLedgerMaterialVO[]>([])
 
+/** 当前登录用户 id（办理人匹配用） */
+const { userInfo } = storeToRefs(useUserStore())
+
+/** 办理中任务：当前用户是该台账进行中办理实例的待办理处理人时记录 taskId */
+const pendingTaskId = ref<number>()
+const canSubmitHandle = computed(() => pendingTaskId.value != null)
+
 /** 上传材料权限（tax:ledger-material:create） */
 const canUploadMaterial = computed(() => hasAccessByCodes(['tax:ledger-material:create']))
 
-/** 编辑备注（tax:ledger:update），状态由附件驱动不可手改 */
+/** 编辑备注（tax:ledger:update），状态由附件与办理流驱动不可手改 */
 const canEdit = computed(() => hasAccessByCodes(['tax:ledger:update']))
 const showRemark = ref(false)
 const remarkDraft = ref('')
@@ -308,6 +441,151 @@ const deadlineText = computed(() => {
   return ''
 })
 
+/** 状态标签色：0待办理=要处理，1已办理=完结（与列表页同口径） */
+function statusTagType(status?: number): 'primary' | 'success' | 'warning' | 'danger' {
+  if (status === 0) {
+    return 'warning'
+  }
+  return 'success'
+}
+
+// ========== 办理（当前用户为办理节点处理人时出现） ==========
+
+/** 刷新办理信息：定位进行中实例上属于当前用户的待办理任务 */
+async function refreshHandleInfo() {
+  pendingTaskId.value = undefined
+  if (!ledgerId.value) {
+    return
+  }
+  try {
+    const flows = await getTaxLedgerReviewFlow(ledgerId.value)
+    const running = (flows ?? []).find(f => f.status === 1 && f.currentNodeType === 2)
+    if (!running || !running.tasks) {
+      return
+    }
+    const myTask = running.tasks.find(t =>
+      t.status === 0
+      && t.assigneeUserId === userInfo.value?.userId
+      && t.round === running.round
+      && t.nodeKey === running.currentNodeKey,
+    )
+    if (myTask?.id) {
+      pendingTaskId.value = myTask.id
+    }
+  } catch {
+    // 流程信息获取失败不影响详情浏览，仅隐藏办理入口
+  }
+}
+
+/** 日期 → yyyy-MM-dd（本地时区） */
+function formatDateTs(ts: number): string {
+  const d = new Date(ts)
+  const m = `${d.getMonth() + 1}`.padStart(2, '0')
+  const day = `${d.getDate()}`.padStart(2, '0')
+  return `${d.getFullYear()}-${m}-${day}`
+}
+
+/** 填报申报信息（引擎 save-fields：字段权限校验 + old→new 留痕，与直改台账不同） */
+const showForm = ref(false)
+const formSaving = ref(false)
+const formDateTs = ref<number>(Date.now())
+const formDraft = ref({ taxAmount: '', paidAmount: '', remark: '' })
+
+function openFormEditor() {
+  const l = ledger.value
+  if (!l) {
+    return
+  }
+  formDateTs.value = l.submitDate ? new Date(l.submitDate).getTime() : Date.now()
+  formDraft.value = {
+    taxAmount: l.taxAmount == null ? '' : String(l.taxAmount),
+    paidAmount: l.paidAmount == null ? '' : String(l.paidAmount),
+    remark: l.remark || '',
+  }
+  showForm.value = true
+}
+
+async function saveForm() {
+  if (!pendingTaskId.value || formSaving.value) {
+    return
+  }
+  const { taxAmount, paidAmount, remark } = formDraft.value
+  for (const [label, v] of [['应纳税额', taxAmount], ['已缴金额', paidAmount]] as const) {
+    if (v !== '' && Number.isNaN(Number(v))) {
+      toast.show(`${label}格式不正确，请输入数字`)
+      return
+    }
+  }
+  formSaving.value = true
+  try {
+    await saveBpmTaskFields(pendingTaskId.value, {
+      paidAmount,
+      remark,
+      submitDate: formatDateTs(formDateTs.value),
+      taxAmount,
+    })
+    toast.show('申报信息已保存')
+    showForm.value = false
+    loadDetail()
+  } catch (e: any) {
+    toast.show(e?.message || '保存失败，请重试')
+  } finally {
+    formSaving.value = false
+  }
+}
+
+/** 提交办理（提交即办结；引擎侧必填兜底 + 抢占互斥） */
+const showSubmit = ref(false)
+const submitComment = ref('')
+const submitting = ref(false)
+
+function openSubmitDialog() {
+  submitComment.value = ''
+  showSubmit.value = true
+}
+
+async function confirmSubmit() {
+  if (!pendingTaskId.value || submitting.value) {
+    return
+  }
+  submitting.value = true
+  try {
+    await submitBpmTaskHandle(pendingTaskId.value, submitComment.value.trim() || undefined)
+    toast.show('办理已提交，任务已办结')
+    showSubmit.value = false
+    pendingTaskId.value = undefined
+    loadDetail()
+  } catch (e: any) {
+    toast.show(e?.message || '提交失败，请重试')
+  } finally {
+    submitting.value = false
+  }
+}
+
+/** 查看流程弹层（每轮实例一组） */
+const showFlow = ref(false)
+const flowLoading = ref(false)
+const flowItems = ref<FgBpmFlowItem[]>([])
+
+async function openFlow() {
+  if (!ledgerId.value) {
+    return
+  }
+  showFlow.value = true
+  flowLoading.value = true
+  try {
+    const flows = await getTaxLedgerReviewFlow(ledgerId.value)
+    flowItems.value = (flows ?? []).map(f => ({
+      label: `第 ${f.round} 轮 · ${f.businessTitle || '办税任务办理'}`,
+      detail: f,
+    }))
+  } catch {
+    flowItems.value = []
+  } finally {
+    flowLoading.value = false
+  }
+}
+
 async function loadDetail() {
   if (!ledgerId.value) {
     loading.value = false
@@ -319,6 +597,7 @@ async function loadDetail() {
     getTaxLedgerMaterialListByLedger(ledgerId.value).then((list) => {
       materials.value = list
     }).catch(() => {})
+    refreshHandleInfo()
   } catch (e) {
     console.error('加载办税任务失败：', e)
     ledger.value = null

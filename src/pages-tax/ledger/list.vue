@@ -11,11 +11,22 @@
       </template>
     </wd-navbar>
 
+    <!-- 关键字搜索：公司名称 / 办税人员 / 所属期（后端 keyword 模糊匹配） -->
+    <view class="bg-white px-24rpx pb-16rpx">
+      <wd-search
+        v-model="keyword"
+        placeholder="搜索公司 / 办税人 / 所属期"
+        hide-cancel
+        @search="handleSearch"
+        @clear="handleSearch"
+      />
+    </view>
+
     <!-- 状态筛选条 -->
-    <view class="flex gap-16rpx overflow-x-auto bg-white px-24rpx py-16rpx">
+    <view class="flex gap-16rpx overflow-x-auto bg-white px-24rpx pb-16rpx">
       <view
         v-for="chip in statusChips"
-        :key="chip.value"
+        :key="chip.label"
         class="flex-shrink-0 rounded-full px-24rpx py-8rpx text-24rpx"
         :class="currentStatus === chip.value ? 'bg-[#018d71] text-white' : 'bg-[#f5f6f8] text-[#666]'"
         @click="handleStatusChange(chip.value)"
@@ -56,7 +67,7 @@
               <view class="line-clamp-1 flex-1 text-30rpx text-[#333] font-semibold">
                 {{ item.companyName || '-' }}
               </view>
-              <wd-tag :type="item.status === 0 ? 'warning' : 'success'" plain class="ml-16rpx flex-shrink-0">
+              <wd-tag :type="statusTagType(item.status)" plain class="ml-16rpx flex-shrink-0">
                 {{ getDictLabel(DICT_TYPE.TAX_LEDGER_STATUS, item.status) || '未知' }}
               </wd-tag>
             </view>
@@ -144,14 +155,24 @@ const { hasAccessByCodes } = useAccess()
 /** 初始化权限（tax:ledger:init） */
 const canInit = computed(() => hasAccessByCodes(['tax:ledger:init']))
 
-const statusChips = [
-  { label: '待办', value: 0 },
-  { label: '已办结', value: 1 },
-  { label: '全部', value: -1 },
+/**
+ * 状态筛选条。台账仅两态：0 待办理（办理流在途，等待办税人提交办理）/ 1 已办理（提交办结）；
+ * value 为 undefined 的「全部」不传状态条件。
+ */
+const statusChips: { label: string, value?: number[] }[] = [
+  { label: '待办理', value: [0] },
+  { label: '已办理', value: [1] },
+  { label: '全部', value: undefined },
 ]
-const currentStatus = ref(0)
+const currentStatus = ref<number[] | undefined>(statusChips[0]!.value)
 const list = ref<TaxLedgerVO[]>([])
 const pagingRef = ref<any>()
+
+/** 关键字：公司名称 / 办税人 / 所属期（后端模糊匹配） */
+const keyword = ref('')
+function handleSearch() {
+  pagingRef.value?.reload()
+}
 
 /** 公司筛选 */
 const showCompanyPicker = ref(false)
@@ -169,12 +190,20 @@ const currentCompanyName = computed(() =>
 const companyActions = computed(() =>
   companyColumns.value.map(c => ({ name: companyLabel(c) })))
 
-function handleStatusChange(value: number) {
+function handleStatusChange(value?: number[]) {
   if (currentStatus.value === value) {
     return
   }
   currentStatus.value = value
   pagingRef.value?.reload()
+}
+
+/** 状态标签色：0待办理=要处理，1已办理=完结 */
+function statusTagType(status?: number): 'primary' | 'success' | 'warning' | 'danger' {
+  if (status === 0) {
+    return 'warning'
+  }
+  return 'success'
 }
 
 function handleCompanySelect({ item, index }: { item: { name: string }, index: number }) {
@@ -192,8 +221,9 @@ async function queryList(pageNo: number, pageSize: number) {
     const data = await getTaxLedgerPage({
       pageNo,
       pageSize,
-      status: currentStatus.value === -1 ? undefined : currentStatus.value,
+      statusList: currentStatus.value,
       companyId: currentCompany.value,
+      keyword: keyword.value.trim() || undefined,
     })
     pagingRef.value?.completeByTotal(data.list, data.total)
   } catch {

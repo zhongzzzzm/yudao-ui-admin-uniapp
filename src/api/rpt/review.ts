@@ -1,3 +1,4 @@
+import type { BpmInstanceDetailVO } from '@/api/bpm/flow'
 import type { PageParam, PageResult } from '@/http/types'
 import { http } from '@/http/http'
 
@@ -29,14 +30,6 @@ export interface FilingReviewVO {
   hasError?: boolean // 任一部门有误高亮用
 }
 
-/** 底稿复核提交请求 */
-export interface FilingReviewSubmitReqVO {
-  filingId: number // 报表任务ID（必填）
-  deptId: number // 负责/复核部门ID（必填）
-  reviewResult: number // 1=复核无误 2=复核有误（必填）
-  reviewOpinion?: string // 复核意见（复核有误时必填）
-}
-
 /** 获得底稿复核分页 */
 export function getFilingReviewPage(params: FilingReviewPageReqVO) {
   return http.get<PageResult<FilingReviewVO>>('/rpt/tax-report-filing-review/page', params)
@@ -47,7 +40,18 @@ export function getFilingReviewListByFiling(filingId: number) {
   return http.get<FilingReviewVO[]>('/rpt/tax-report-filing-review/by-filing', { filingId })
 }
 
-/** 提交底稿复核意见 */
-export function submitFilingReview(data: FilingReviewSubmitReqVO) {
-  return http.post<boolean>('/rpt/tax-report-filing-review/submit', data)
+/**
+ * 按报表任务获得各部门复核审批流（分派记录 + 引擎任务时间线）
+ *
+ * 复核动作已全部接入审批引擎，App 侧只做只读回看；
+ * 旧的手写提交接口后端已停用，这里不再提供提交方法。
+ */
+export interface FilingReviewFlowVO extends FilingReviewVO {
+  reviewId: number // 复核记录ID（= id）
+  flow?: BpmInstanceDetailVO | null // 关联审批实例详情（null 表示尚未发起）
+}
+
+/** 按报送任务获得各部门复核审批流 */
+export function getFilingReviewFlowByFiling(filingId: number) {
+  return http.get<FilingReviewFlowVO[]>('/rpt/tax-report-filing-review/flow-by-filing', { filingId })
 }

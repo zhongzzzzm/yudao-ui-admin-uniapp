@@ -30,7 +30,7 @@
       <view class="flex gap-16rpx overflow-x-auto bg-white px-24rpx pb-16rpx">
         <view
           v-for="chip in currentChips"
-          :key="chip.value"
+          :key="chip.label"
           class="flex-shrink-0 rounded-full px-24rpx py-8rpx text-24rpx"
           :class="currentStatus === chip.value
             ? 'bg-[#018d71] text-white'
@@ -133,7 +133,7 @@ const availableTabs = computed<{ label: string, name: TodoTab }[]>(() => {
     tabs.push({ label: '办税待办', name: 'ledger' })
   }
   if (hasAccessByCodes(['rpt:filing-review:query-all', 'rpt:filing-review:submit'])) {
-    tabs.push({ label: '复核待办', name: 'review' })
+    tabs.push({ label: '复核回看', name: 'review' })
   }
   return tabs
 })
@@ -142,8 +142,13 @@ const activeTab = ref<TodoTab>(availableTabs.value[0]?.name ?? 'filing')
 const list = ref<any[]>([])
 const pagingRef = ref<any>()
 
-/** 各事项类型的状态筛选 chip（value 语义见各 API） */
-const statusChips: Record<TodoTab, { label: string, value: any }[]> = {
+/**
+ * 各事项类型的状态筛选 chip（value 语义见各 API）
+ *
+ * 办税台账仅两态：0 待办理（办理流在途，等待办税人提交办理）/ 1 已办理（提交办结）；
+ * done 标记该 chip 属已完结口径，用于隐藏截止日提示。
+ */
+const statusChips: Record<TodoTab, { label: string, value: any, done?: boolean }[]> = {
   filing: [
     { label: '可生成', value: 'canGenerate' },
     { label: '待生成', value: 'waitGenerate' },
@@ -151,12 +156,13 @@ const statusChips: Record<TodoTab, { label: string, value: any }[]> = {
     { label: '待复核', value: 'waitReview' },
   ],
   ledger: [
-    { label: '待办', value: 0 },
-    { label: '已办结', value: 1 },
+    { label: '待办理', value: [0] },
+    { label: '已办理', value: [1], done: true },
   ],
   review: [
+    // 复核动作已接入审批引擎，App 侧仅回看分派记录与结论
     { label: '待复核', value: 0 },
-    { label: '已复核', value: 1 },
+    { label: '已复核', value: 1, done: true },
   ],
 }
 
@@ -197,16 +203,17 @@ function handleStatusChange(value: any) {
   pagingRef.value?.reload()
 }
 
-/** 拉取当前事项类型的分页数据 */
+/** 拉取当前事项类型的分页数据（关键字三个 tab 均下发给后端模糊匹配） */
 async function queryList(pageNo: number, pageSize: number) {
   try {
+    const kw = keyword.value.trim() || undefined
     let result: { list: any[], total: number }
     if (activeTab.value === 'filing') {
-      result = await getTaxReportFilingPage({ pageNo, pageSize, combinedStatus: currentStatus.value })
+      result = await getTaxReportFilingPage({ pageNo, pageSize, combinedStatus: currentStatus.value, keyword: kw })
     } else if (activeTab.value === 'ledger') {
-      result = await getTaxLedgerPage({ pageNo, pageSize, status: currentStatus.value })
+      result = await getTaxLedgerPage({ pageNo, pageSize, statusList: currentStatus.value, keyword: kw })
     } else {
-      result = await getFilingReviewPage({ pageNo, pageSize, reviewStatus: currentStatus.value })
+      result = await getFilingReviewPage({ pageNo, pageSize, reviewStatus: currentStatus.value, keyword: kw })
     }
     pagingRef.value?.completeByTotal(result.list, result.total)
   } catch {
@@ -264,26 +271,36 @@ function itemTagText(item: any): string {
   return getDictLabel(DICT_TYPE.REPORT_FILING_REVIEW_STATUS, (item as FilingReviewVO).reviewStatus) || '未知'
 }
 
-/** 状态标签类型（wot-ui wd-tag 的 type） */
-function itemTagType(item: any): 'primary' | 'success' | 'warning' | 'error' | 'info' {
+/** 状态标签类型（wot-ui wd-tag 的 type，无 error 取值，error 统一归一为 danger） */
+function itemTagType(item: any): 'primary' | 'success' | 'warning' | 'danger' | 'info' {
   if (activeTab.value === 'filing') {
-    return FILING_STAGE_TAG_TYPE[(item as TaxReportFilingVO).combinedStage ?? ''] ?? 'info'
+    const stage = (item as TaxReportFilingVO).combinedStage ?? ''
+    const type = FILING_STAGE_TAG_TYPE[stage]
+    if (type === 'error') {
+      return 'danger'
+    }
+    return type ?? 'info'
   }
   if (activeTab.value === 'ledger') {
-    return (item as TaxLedgerVO).status === 0 ? 'warning' : 'success'
+    // 0待办理=需处理，1已办理=完结
+    const status = (item as TaxLedgerVO).status
+    return status === 0 ? 'warning' : 'success'
   }
   return (item as FilingReviewVO).reviewStatus === 0 ? 'warning' : 'success'
 }
 
-/** 截止日提示（临近 3 天标橙、逾期标红） */
+/** 截止日提示（临近 3 天标橙、逾期标红；已办结类行不再提示） */
 function deadlineHint(item: any): { text: string, danger: boolean } | null {
   let deadline: string | undefined
+  let settled = false
   if (activeTab.value === 'filing') {
     deadline = (item as TaxReportFilingVO).submitDeadline
   } else if (activeTab.value === 'ledger') {
     deadline = (item as TaxLedgerVO).deadline
+    // 已办理（1）的行不再提示逾期，避免误导读为待处理
+    settled = (item as TaxLedgerVO).status === 1
   }
-  if (!deadline || currentStatus.value === 1 || currentStatus.value === 'reviewDone') {
+  if (!deadline || settled || currentStatus.value?.done) {
     return null
   }
   const days = Math.ceil((new Date(deadline).getTime() - Date.now()) / 86400000)
@@ -312,7 +329,8 @@ function handleItemClick(item: any) {
 async function refreshBadge() {
   try {
     const [ledgerRes, reviewRes, filingStats, filingWaitReview] = await Promise.all([
-      getTaxLedgerPage({ pageNo: 1, pageSize: 1, status: 0 }),
+      // 办税待办 = 待办理0（等待办税人提交办理）
+      getTaxLedgerPage({ pageNo: 1, pageSize: 1, statusList: [0] }),
       getFilingReviewPage({ pageNo: 1, pageSize: 1, reviewStatus: 0 }),
       hasAccessByCodes(['rpt:tax-report-filing:query'])
         ? getTaxReportFilingStats().catch(() => null)

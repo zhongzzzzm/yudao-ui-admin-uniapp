@@ -58,10 +58,17 @@ const TAX_DICT = {
   VALIDATION_RULE_TYPE: 'validation_rule_type', // 校验规则细类
 }
 
+/** ========== BPM - 轻量审批引擎 ========== */
+const BPM_DICT = {
+  BPM_INSTANCE_STATUS: 'bpm_instance_status', // 审批实例状态：1审批中/2已办结/3已驳回/4已作废
+  BPM_TASK_STATUS: 'bpm_task_status', // 审批任务状态：0待审批/1已通过/2已驳回/3已失效
+} as const
+
 /** 字典类型枚举 - 统一导出 */
 export const DICT_TYPE = {
   ...INFRA_DICT,
   ...SYSTEM_DICT,
   ...COMMON_DICT,
   ...TAX_DICT,
+  ...BPM_DICT,
 } as const
