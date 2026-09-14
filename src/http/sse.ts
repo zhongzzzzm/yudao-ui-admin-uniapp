@@ -1,4 +1,5 @@
 import { useTokenStore } from '@/store/token'
+import { useUserStore } from '@/store/user'
 import { getEnvBaseUrl } from '@/utils'
 
 export interface SseOptions<T = Record<string, any>> {
@@ -7,6 +8,23 @@ export interface SseOptions<T = Record<string, any>> {
   onMessage?: (res: { data: string }) => void | Promise<void>
   onError?: (...args: any[]) => void
   onClose?: (...args: any[]) => void
+  /** 额外请求头（如 tenant-id），合并到两个发送路径 */
+  extraHeaders?: Record<string, string>
+}
+
+/** 构造公共头：token 由各发送路径自行获取，这里补租户标识 */
+function buildCommonHeaders(): Record<string, string> {
+  const headers: Record<string, string> = {}
+  // #ifdef H5 || MP-WEIXIN
+  if (import.meta.env.VITE_APP_TENANT_ENABLE === 'true') {
+    const userStore = useUserStore()
+    if (userStore.tenantId)
+      headers['tenant-id'] = String(userStore.tenantId)
+    if (userStore.visitTenantId)
+      headers['visit-tenant-id'] = String(userStore.visitTenantId)
+  }
+  // #endif
+  return headers
 }
 
 interface ChunkRequestTask extends UniNamespace.RequestTask {
@@ -157,6 +175,7 @@ async function sendMpSsePost<T>(url: string, options: SseOptions<T>) {
   const mpToken = await useTokenStore().tryGetValidToken()
   const mpParser = createSseParser(options)
   const decoder = createUtf8ChunkDecoder()
+  const mpHeaders = { Authorization: `Bearer ${mpToken}`, ...buildCommonHeaders(), ...options.extraHeaders }
   let processing = Promise.resolve()
 
   return new Promise<void>((resolve, reject) => {
@@ -216,6 +235,8 @@ async function sendMpSsePost<T>(url: string, options: SseOptions<T>) {
       header: {
         'Content-Type': 'application/json',
         ...(mpToken ? { Authorization: `Bearer ${mpToken}` } : {}),
+        ...buildCommonHeaders(),
+        ...options.extraHeaders,
       },
       data: options.data,
       enableChunked: true,
@@ -287,6 +308,8 @@ async function sendH5SsePost<T>(url: string, options: SseOptions<T>) {
       headers: {
         'Content-Type': 'application/json',
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        ...buildCommonHeaders(),
+        ...options.extraHeaders,
       },
       body: JSON.stringify(options.data),
       signal: requestController.signal,

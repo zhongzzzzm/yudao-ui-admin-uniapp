@@ -108,6 +108,7 @@ export default defineConfig(({ command, mode }) => {
           'src/pages-rpt', // “报送管理”模块
           'src/pages-tax', // “税务管理”模块
           'src/pages-fin', // “财务”模块
+          'src/pages-ai', // “AI 助手”模块
         ],
         dts: 'src/types/uni-pages.d.ts',
       }),

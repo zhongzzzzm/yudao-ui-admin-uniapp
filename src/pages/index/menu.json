@@ -398,6 +398,27 @@
           ]
         }
       ]
+    },
+    {
+      "key": "ai",
+      "name": "智能助手",
+      "subGroups": [
+        {
+          "key": "ai-main",
+          "name": "",
+          "menus": [
+            {
+              "key": "ai-chat",
+              "name": "智能员工",
+              "icon": "chat",
+              "iconColor": "#722ed1",
+              "url": "/pages-ai/employee/index",
+              "permission": "ai:assistant:use",
+              "description": "选择岗位化 AI 员工对话"
+            }
+          ]
+        }
+      ]
     }
   ]
 }

@@ -99,6 +99,7 @@ import type { FilingReviewVO } from '@/api/rpt/review'
 import type { TaxLedgerVO } from '@/api/tax/ledger'
 import { useToast } from '@wot-ui/ui/components/wd-toast'
 import { computed, ref, watch } from 'vue'
+import { getBpmTodoCount, getBpmTodoPage } from '@/api/bpm/task'
 import { FILING_COMBINED_STAGE, FILING_STAGE_TAG_TYPE, getTaxReportFilingPage, getTaxReportFilingStats } from '@/api/rpt/filing'
 import { getFilingReviewPage } from '@/api/rpt/review'
 import { getTaxLedgerPage } from '@/api/tax/ledger'
@@ -121,11 +122,13 @@ definePage({
 
 const toast = useToast()
 const { hasAccessByCodes } = useAccess()
-type TodoTab = 'filing' | 'ledger' | 'review'
+type TodoTab = 'approval' | 'filing' | 'ledger' | 'review'
 
 /** 按权限过滤后的可用 tab（无权限的 tab 不展示，避免点击后 403） */
 const availableTabs = computed<{ label: string, name: TodoTab }[]>(() => {
   const tabs: { label: string, name: TodoTab }[] = []
+  // 审批待办（轻量审批引擎，接口仅要求登录，全员可见）
+  tabs.push({ label: '审批', name: 'approval' })
   if (hasAccessByCodes(['rpt:tax-report-filing:query'])) {
     tabs.push({ label: '报送任务', name: 'filing' })
   }
@@ -149,6 +152,12 @@ const pagingRef = ref<any>()
  * done 标记该 chip 属已完结口径，用于隐藏截止日提示。
  */
 const statusChips: Record<TodoTab, { label: string, value: any, done?: boolean }[]> = {
+  approval: [
+    // value 语义：0=全部（不筛类型）1=审批节点 2=办理节点
+    { label: '全部', value: 0 },
+    { label: '审批', value: 1 },
+    { label: '办理', value: 2 },
+  ],
   filing: [
     { label: '可生成', value: 'canGenerate' },
     { label: '待生成', value: 'waitGenerate' },
@@ -172,6 +181,7 @@ const currentStatus = ref<any>(statusChips[activeTab.value]?.[0]?.value ?? 0)
 /** 关键字搜索：各 tab 的搜索口径见后端 keyword 参数 */
 const keyword = ref('')
 const searchPlaceholder = computed(() => ({
+  approval: '搜索单据标题',
   filing: '搜索模板 / 报送名称',
   ledger: '搜索公司 / 办税人 / 所属期',
   review: '搜索模板名称',
@@ -208,7 +218,9 @@ async function queryList(pageNo: number, pageSize: number) {
   try {
     const kw = keyword.value.trim() || undefined
     let result: { list: any[], total: number }
-    if (activeTab.value === 'filing') {
+    if (activeTab.value === 'approval') {
+      result = await getBpmTodoPage({ pageNo, pageSize, businessTitle: kw, nodeType: currentStatus.value || undefined })
+    } else if (activeTab.value === 'filing') {
       result = await getTaxReportFilingPage({ pageNo, pageSize, combinedStatus: currentStatus.value, keyword: kw })
     } else if (activeTab.value === 'ledger') {
       result = await getTaxLedgerPage({ pageNo, pageSize, statusList: currentStatus.value, keyword: kw })
@@ -223,6 +235,9 @@ async function queryList(pageNo: number, pageSize: number) {
 
 /** 卡片主标题 */
 function itemTitle(item: any): string {
+  if (activeTab.value === 'approval') {
+    return (item as any).businessTitle || '审批单'
+  }
   if (activeTab.value === 'filing') {
     return (item as TaxReportFilingVO).templateName || '报送任务'
   }
@@ -236,6 +251,12 @@ function itemTitle(item: any): string {
 
 /** 卡片摘要行 */
 function itemSummary(item: any): string[] {
+  if (activeTab.value === 'approval') {
+    return [
+      `当前节点：${(item as any).nodeName ?? '-'} · 第 ${(item as any).round ?? 1} 轮`,
+      `到达时间：${formatDateTime((item as any).createTime)}`,
+    ]
+  }
   if (activeTab.value === 'filing') {
     const filing = item as TaxReportFilingVO
     const lines = [`报送：${filing.submitName || '-'}`]
@@ -261,6 +282,9 @@ function itemSummary(item: any): string[] {
 
 /** 状态标签文本 */
 function itemTagText(item: any): string {
+  if (activeTab.value === 'approval') {
+    return (item as any).nodeType === 2 ? '办理' : '审批'
+  }
   if (activeTab.value === 'filing') {
     const stage = (item as TaxReportFilingVO).combinedStage ?? ''
     return (FILING_COMBINED_STAGE as Record<string, string>)[stage] ?? '未知'
@@ -273,6 +297,9 @@ function itemTagText(item: any): string {
 
 /** 状态标签类型（wot-ui wd-tag 的 type，无 error 取值，error 统一归一为 danger） */
 function itemTagType(item: any): 'primary' | 'success' | 'warning' | 'danger' | 'info' {
+  if (activeTab.value === 'approval') {
+    return (item as any).nodeType === 2 ? 'info' : 'primary'
+  }
   if (activeTab.value === 'filing') {
     const stage = (item as TaxReportFilingVO).combinedStage ?? ''
     const type = FILING_STAGE_TAG_TYPE[stage]
@@ -315,6 +342,17 @@ function deadlineHint(item: any): { text: string, danger: boolean } | null {
 
 /** 点击卡片进入对应详情 */
 function handleItemClick(item: any) {
+  if (activeTab.value === 'approval') {
+    const task = item as any
+    if (task.nodeType === 2 && task.businessModule === 'tax_ledger_review') {
+      // 办理任务：办税台账的执行动作在其详情页提交办理
+      uni.navigateTo({ url: `/pages-tax/ledger/detail?id=${task.businessId}` })
+    } else {
+      // 审批任务（及未接入移动办理页的办理任务）：进入移动审批详情
+      uni.navigateTo({ url: `/pages-bpm/task-detail/index?taskId=${task.id}` })
+    }
+    return
+  }
   if (activeTab.value === 'filing') {
     uni.navigateTo({ url: `/pages-rpt/filing/detail?id=${item.id}` })
   } else if (activeTab.value === 'ledger') {
@@ -328,7 +366,7 @@ function handleItemClick(item: any) {
 /** 刷新待办角标（报送任务待办 + 办税待办 + 复核待办的数量之和） */
 async function refreshBadge() {
   try {
-    const [ledgerRes, reviewRes, filingStats, filingWaitReview] = await Promise.all([
+    const [ledgerRes, reviewRes, filingStats, filingWaitReview, bpmTodo] = await Promise.all([
       // 办税待办 = 待办理0（等待办税人提交办理）
       getTaxLedgerPage({ pageNo: 1, pageSize: 1, statusList: [0] }),
       getFilingReviewPage({ pageNo: 1, pageSize: 1, reviewStatus: 0 }),
@@ -338,11 +376,13 @@ async function refreshBadge() {
       hasAccessByCodes(['rpt:tax-report-filing:query'])
         ? getTaxReportFilingPage({ pageNo: 1, pageSize: 1, combinedStatus: 'waitReview' }).catch(() => null)
         : Promise.resolve(null),
+      // 审批待办（引擎待办，仅要求登录）
+      getBpmTodoCount().catch(() => null),
     ])
     // 报送任务待办 = 待执行（待生成/可生成）+ 执行失败 + 待复核
     const filingPending = (filingStats ? (filingStats.pending + filingStats.fail) : 0)
       + (filingWaitReview?.total ?? 0)
-    const total = (ledgerRes.total ?? 0) + (reviewRes.total ?? 0) + filingPending
+    const total = (ledgerRes.total ?? 0) + (reviewRes.total ?? 0) + filingPending + (bpmTodo?.count ?? 0)
     tabbarStore.setTabbarItemBadge(1, total > 0 ? total : 0)
   } catch {
     // 角标刷新失败不影响页面，静默处理
