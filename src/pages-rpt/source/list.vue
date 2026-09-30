@@ -180,7 +180,7 @@ async function loadData() {
     if (!batchColumns.value.length) {
       const batches = await getReportDataBatchList()
       batchColumns.value = batches.map(batch => ({
-        label: `${batch.batchDate || batch.description || '数据版本'}${batch.description && batch.batchDate ? `（${batch.description}）` : ''}`,
+        label: batch.batchDate || `版本${batch.id}`,
         value: batch.id,
       }))
       // 默认选中最早未完成或最新版本：无指定时取列表第一个（后端默认最新）

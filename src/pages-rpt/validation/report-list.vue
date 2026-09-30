@@ -418,7 +418,7 @@ function handleAction({ item }: { item: { key: string } }) {
 // 数据版本下拉（校验/对比共用）
 const batches = ref<ReportDataBatchVO[]>([])
 const batchLabels = computed(() =>
-  batches.value.map(b => `${b.batchDate || ''}${b.description ? ` ${b.description}` : ''}` || `版本${b.id}`),
+  batches.value.map(b => b.batchDate || `版本${b.id}`),
 )
 
 function batchIndex(batchId?: number) {

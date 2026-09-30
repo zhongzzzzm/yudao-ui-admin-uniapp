@@ -184,7 +184,7 @@ const reports = ref<ReportVO[]>([])
 const batches = ref<ReportDataBatchVO[]>([])
 const reportLabels = computed(() => reports.value.map(item => item.name || `报表${item.id}`))
 const batchLabels = computed(() =>
-  batches.value.map(b => `${b.batchDate || ''}${b.description ? ` ${b.description}` : ''}` || `版本${b.id}`),
+  batches.value.map(b => b.batchDate || `版本${b.id}`),
 )
 
 function reportIndex(reportId?: number) {

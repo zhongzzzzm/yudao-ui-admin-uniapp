@@ -304,7 +304,7 @@ const validateBatchId = ref<number>()
 const validateTarget = ref<ReportRuleTypeVO>()
 const batches = ref<ReportDataBatchVO[]>([])
 const batchLabels = computed(() =>
-  batches.value.map(b => `${b.batchDate || ''}${b.description ? ` ${b.description}` : ''}` || `版本${b.id}`),
+  batches.value.map(b => b.batchDate || `版本${b.id}`),
 )
 
 function batchIndex(batchId?: number) {
