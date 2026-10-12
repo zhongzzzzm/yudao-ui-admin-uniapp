@@ -64,6 +64,23 @@ const BPM_DICT = {
   BPM_TASK_STATUS: 'bpm_task_status', // 审批任务状态：0待审批/1已通过/2已驳回/3已失效
 } as const
 
+/** ========== FL - 报价测算 ========== */
+const FL_DICT = {
+  FL_QUOTE_STATUS: 'fl_quote_status', // 方案状态：0草稿/1已确认
+  FL_QUOTE_LEASE_METHOD: 'fl_quote_lease_method', // 租赁方式
+  FL_QUOTE_PAY_FREQ: 'fl_quote_pay_freq', // 支付频率：月/双月/季/四个月/半年/年
+  FL_QUOTE_PREPAY: 'fl_quote_prepay', // 先付/后付
+  FL_QUOTE_PAY_METHOD: 'fl_quote_pay_method', // 投放付款方式
+  FL_QUOTE_CAL_METHOD: 'fl_quote_cal_method', // 租金计算方式
+  FL_QUOTE_MANUAL_KIND: 'fl_quote_manual_kind', // 手工收支类别
+  FL_QUOTE_DEPOSIT_METHOD: 'fl_quote_deposit_method', // 保证金收取方式
+  FL_QUOTE_DEPOSIT_RETURN: 'fl_quote_deposit_return', // 保证金退回方式
+  FL_QUOTE_SRV_METHOD: 'fl_quote_srv_method', // 服务费收取/支付方式
+  FL_QUOTE_SRV_BASE: 'fl_quote_srv_base', // 服务费基数
+  FL_QUOTE_RATIO_BASE: 'fl_quote_ratio_base', // 计算比例基数
+  FL_QUOTE_TAX_MODE: 'fl_quote_tax_mode', // 税种口径
+}
+
 /** 字典类型枚举 - 统一导出 */
 export const DICT_TYPE = {
   ...INFRA_DICT,
@@ -71,4 +88,5 @@ export const DICT_TYPE = {
   ...COMMON_DICT,
   ...TAX_DICT,
   ...BPM_DICT,
+  ...FL_DICT,
 } as const

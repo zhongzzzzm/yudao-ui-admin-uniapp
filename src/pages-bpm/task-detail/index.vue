@@ -1,5 +1,6 @@
 <script lang="ts" setup>
 import type { BpmDetail, BpmDetailOpLog } from '@/api/bpm/task'
+import { useDialog } from '@wot-ui/ui/components/wd-dialog'
 import { useToast } from '@wot-ui/ui/components/wd-toast'
 import { computed, ref } from 'vue'
 
@@ -7,6 +8,7 @@ import {
   approveBpmTask,
   getBpmTaskDetail,
   rejectBpmTask,
+  remindBpmInstance,
   returnBpmTask,
 } from '@/api/bpm/task'
 import { formatDateTime } from '@/utils/date'
@@ -21,10 +23,12 @@ definePage({
 })
 
 const toast = useToast()
+const dialog = useDialog()
 const loading = ref(false)
 const detail = ref<BpmDetail>()
-/** 入参 taskId：审批动作需要 */
+/** 入参 taskId：审批动作需要；instanceId：已办/我的申请/抄送回看入口 */
 const taskId = ref<number>()
+const instanceId = ref<number>()
 
 const STATUS_LABEL: Record<number, string> = {
   1: '审批中',
@@ -95,11 +99,14 @@ function openReject() {
 }
 
 async function load() {
-  if (!taskId.value)
+  if (!taskId.value && !instanceId.value)
     return
   loading.value = true
   try {
-    detail.value = await getBpmTaskDetail({ taskId: taskId.value })
+    detail.value = await getBpmTaskDetail({
+      instanceId: instanceId.value || undefined,
+      taskId: taskId.value || undefined,
+    })
   } finally {
     loading.value = false
   }
@@ -119,6 +126,29 @@ async function onApprove() {
   } finally {
     acting.value = false
   }
+}
+
+/** 发起人催办（24 小时限频，后端校验） */
+function onRemind() {
+  if (!instanceId.value && !taskId.value)
+    return
+  const target = instanceId.value ?? detail.value?.id
+  if (!target)
+    return
+  dialog.confirm({
+    title: '确认催办',
+    msg: '将给当前节点处理人发送催办提醒，确定催办？',
+  }).then(async () => {
+    acting.value = true
+    try {
+      await remindBpmInstance(target)
+      toast.success('已催办')
+    } catch {
+      toast.show('催办失败，请稍后重试')
+    } finally {
+      acting.value = false
+    }
+  }).catch(() => {})
 }
 
 async function onRejectConfirm() {
@@ -150,6 +180,11 @@ async function onRejectConfirm() {
 onLoad((query) => {
   if (query?.taskId) {
     taskId.value = Number(query.taskId)
+  }
+  if (query?.instanceId) {
+    instanceId.value = Number(query.instanceId)
+  }
+  if (taskId.value || instanceId.value) {
     load()
   }
 })
@@ -252,6 +287,16 @@ function handleBack() {
         </view>
       </view>
     </scroll-view>
+
+    <!-- 发起人催办（回看自己发起的进行中实例时可见，24 小时限频） -->
+    <view
+      v-if="detail?.canRemind"
+      class="border-t border-gray-100 bg-white px-24rpx py-16rpx pb-[env(safe-area-inset-bottom)]"
+    >
+      <wd-button :disabled="acting" plain block type="primary" @click="onRemind">
+        催办
+      </wd-button>
+    </view>
 
     <!-- 审批操作区（仅审批节点待办处理人可见） -->
     <view

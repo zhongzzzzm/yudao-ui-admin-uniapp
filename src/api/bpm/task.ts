@@ -122,3 +122,8 @@ export function returnBpmTask(taskId: number, comment: string, targetNodeKey: st
 export function remindBpmInstance(instanceId: number) {
   return http.put<boolean>('/bpm/task/remind', { instanceId })
 }
+
+/** 我的已办分页（已处理的审批/办理任务回看，含实例摘要） */
+export function getBpmDonePage(params: { pageNo: number, pageSize: number }) {
+  return http.get<{ list: BpmTask[], total: number }>('/bpm/task/done-page', params)
+}

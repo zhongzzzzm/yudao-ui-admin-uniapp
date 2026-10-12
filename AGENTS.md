@@ -17,7 +17,7 @@
 ## 架构与分层
 
 - **路由与清单是生成的**：`src/pages.json` 和 `src/manifest.json` 由约定式路由插件生成，不要手改；改 `pages.config.ts` 和 `manifest.config.ts`，改完检查生成产物和分包配置。Tabbar 配置统一在 `src/tabbar/config.ts`。
-- **分包即业务模块**：`src/pages-{system,infra,bpm,core,ai,crm,erp,fms,hrm,im,iot,mall,member,mes,mp,pay,statistics,wms}` 对应 `src/api/<模块>/`。每个业务模块内部自带 `components/`、`store/`、`utils/` 等（参考 `src/pages-fms/`）。
+- **分包即业务模块**：`src/pages-{core,system,infra,rpt,tax,fin,ai,bpm,fl}` 对应 `src/api/<模块>/`，分包清单与 `vite.config.ts` 的 UniPages `subPackages` 一致（core/system/infra/rpt/tax/fin/ai/bpm/fl，新增分包必须在此注册）。每个业务模块内部自带 `components/`、`store/`、`utils/` 等。`pages-fl`（报价测算）与 `pages-bpm` 落地为 App 侧只读查看口径，强编辑操作在 PC 端完成。
 - **HTTP 层**：统一用 `@/http/http` 的 `http`，类型 `PageParam` / `PageResult` 来自 `@/http/types`。`src/http/interceptor.ts` 处理 token（双 token 模式）、租户、API 加解密，头部注释标明是 unibest 官方维护代码，不要大改，避免上游合并冲突。
 - **组件 easycom 前缀**（`pages.config.ts`）：`fg-` → `src/components/fg-*`，`yd-` → `src/components/ganfanren-ui/yd-*`（项目自有 UI，通过 `ganfanren-ui/index.ts` 导出），`wd-` → wot-ui，`z-paging` → 分页组件。新组件按前缀规则放对应目录，无需 import。
 - **状态**：Pinia（`src/store/`），pinia-plugin-persistedstate；字典用 `src/hooks/useDict.ts`。
@@ -30,7 +30,7 @@
 
 ## 上游合并（unibest）
 
-同步上游 unibest 时**不要整段 merge / cherry-pick**，按 `docs/merge/` 里的月度计划手动抽取低风险项。tabbar 相关提交一律不合并：`src/tabbar/*` 是干饭人定制实现（5 个入口 + 登录态白名单保护）。实施时不要把工作区里无关的已暂存文件混入提交。
+同步上游 unibest 时**不要整段 merge / cherry-pick**，按 `docs/merge/` 里的月度计划手动抽取低风险项。tabbar 相关提交一律不合并：`src/tabbar/*` 是干饭人定制实现（4 个入口：工作台/待办/消息/我的 + 登录态白名单保护）。实施时不要把工作区里无关的已暂存文件混入提交。
 
 ## 其他约定
 

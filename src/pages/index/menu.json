@@ -36,6 +36,36 @@
               "permission": "rpt:source-file:query"
             }
           ]
+        },
+        {
+          "key": "rpt-config",
+          "name": "配置与指标",
+          "menus": [
+            {
+              "key": "rpt-config-overview",
+              "name": "配置总览",
+              "icon": "apps",
+              "iconColor": "#1890ff",
+              "url": "/pages-rpt/config-overview/index",
+              "permission": "rpt:report-config-overview:query"
+            },
+            {
+              "key": "rpt-indicator-value",
+              "name": "指标值查询",
+              "icon": "formula",
+              "iconColor": "#1890ff",
+              "url": "/pages-rpt/indicator-value/list",
+              "permission": "rpt:data-indicator-value:query"
+            },
+            {
+              "key": "rpt-recalc-log",
+              "name": "计算联动日志",
+              "icon": "loop",
+              "iconColor": "#1890ff",
+              "url": "/pages-rpt/recalc-log/index",
+              "permission": "rpt:data-indicator-recalc-log:query"
+            }
+          ]
         }
       ]
     },
@@ -183,6 +213,34 @@
       ]
     },
     {
+      "key": "fl",
+      "name": "报价测算",
+      "subGroups": [
+        {
+          "key": "fl-main",
+          "name": "",
+          "menus": [
+            {
+              "key": "fl-quote-calc",
+              "name": "报价测算",
+              "icon": "quote",
+              "iconColor": "#fa8c16",
+              "url": "/pages-fl/quotecalc/list",
+              "permission": "fl:quote-calc:query"
+            },
+            {
+              "key": "fl-quote-verify",
+              "name": "报价复核",
+              "icon": "doublecheck",
+              "iconColor": "#fa8c16",
+              "url": "/pages-fl/quoteverify/list",
+              "permission": "fl:quote-calc:query"
+            }
+          ]
+        }
+      ]
+    },
+    {
       "key": "fin",
       "name": "财务",
       "subGroups": [
@@ -197,6 +255,30 @@
               "iconColor": "#13c2c2",
               "url": "/pages-fin/invoice/list",
               "permission": "fin:invoice-ledger:query"
+            },
+            {
+              "key": "fin-bank-flow",
+              "name": "银行流水",
+              "icon": "storage",
+              "iconColor": "#13c2c2",
+              "url": "/pages-fin/bankflow/list",
+              "permission": "fin:bank-flow:query"
+            },
+            {
+              "key": "fin-financial-report",
+              "name": "财务快报",
+              "icon": "dashboard",
+              "iconColor": "#13c2c2",
+              "url": "/pages-fin/financialreport/list",
+              "permission": "fin:financial-report:query"
+            },
+            {
+              "key": "fin-deposit-interest",
+              "name": "存款结息",
+              "icon": "cost",
+              "iconColor": "#13c2c2",
+              "url": "/pages-fin/depositinterest/list",
+              "permission": "fin:deposit-interest:query"
             },
             {
               "key": "fin-invoice-verification",
@@ -245,6 +327,39 @@
               "iconColor": "#13c2c2",
               "url": "/pages-fin/liquidity/cashflow",
               "permission": "fin:liquidity-cash-flow:query"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "key": "bpm",
+      "name": "审批",
+      "subGroups": [
+        {
+          "key": "bpm-main",
+          "name": "",
+          "menus": [
+            {
+              "key": "bpm-my-instance",
+              "name": "我的申请",
+              "icon": "send",
+              "iconColor": "#1890ff",
+              "url": "/pages-bpm/my-instance/index"
+            },
+            {
+              "key": "bpm-done",
+              "name": "我的已办",
+              "icon": "check-circle",
+              "iconColor": "#1890ff",
+              "url": "/pages-bpm/done/index"
+            },
+            {
+              "key": "bpm-cc",
+              "name": "抄送我的",
+              "icon": "forward",
+              "iconColor": "#1890ff",
+              "url": "/pages-bpm/cc/index"
             }
           ]
         }
