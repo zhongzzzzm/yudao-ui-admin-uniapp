@@ -6,6 +6,8 @@
 
 包管理器只用 pnpm（`preinstall` 强制），Node >= 20。
 
+⚠️ **dev 服务由用户自行在终端启动与重启，agent 一律不要执行 `pnpm dev:*` 等任何启动 / 重启命令**。改动完成后只需保证 lint / type-check 通过，热更新与重启由用户手动完成。
+
 - 开发：`pnpm dev:h5`、`pnpm dev:mp-weixin`（可加 `:test` / `:prod` 切换 mode）
 - 构建：`pnpm build:h5`、`pnpm build:mp-weixin`
 - 类型检查：`pnpm type-check`（vue-tsc；`@wot-ui/ui` 在 node_modules 里的类型报错是已知噪声，过滤 node_modules 后看本仓库错误）
