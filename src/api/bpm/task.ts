@@ -33,6 +33,10 @@ export interface BpmTask {
   businessTitle?: string
   instanceStatus?: number
   businessModule?: string
+  /** 处理人编号（全部待办等场景返回） */
+  assigneeUserId?: number
+  /** 处理人昵称（全部待办等场景返回） */
+  assigneeNickname?: string
 }
 
 /** 审批详情（与 PC 端 BpmInstanceDetailRespVO 同构，移动端只读渲染 + 通过/驳回） */
@@ -126,4 +130,43 @@ export function remindBpmInstance(instanceId: number) {
 /** 我的已办分页（已处理的审批/办理任务回看，含实例摘要） */
 export function getBpmDonePage(params: { pageNo: number, pageSize: number }) {
   return http.get<{ list: BpmTask[], total: number }>('/bpm/task/done-page', params)
+}
+
+// ========== App 审批增强（2026-10 批次：批量审批 / 转办加签 / 全部待办） ==========
+
+/** 全部待办分页（管理员，需 bpm:task:query-all 权限；可按处理人筛选，仅查看） */
+export function getAllBpmTodoPage(params: { assigneeUserId?: number, businessTitle?: string, nodeType?: number, pageNo: number, pageSize: number }) {
+  return http.get<{ list: BpmTask[], total: number }>('/bpm/task/all-todo-page', params)
+}
+
+/** 批量审批单条结果 */
+export interface BpmTaskBatchItem {
+  /** 任务编号 */
+  taskId: number
+  /** 单据标题 */
+  businessTitle?: string
+  /** 是否成功 */
+  success: boolean
+  /** 失败原因（成功时为空） */
+  errorMsg?: string
+}
+
+/** 批量审批通过（仅限当前用户名下待审批任务，单批最多 50 条，逐条独立事务） */
+export function batchApproveBpmTask(taskIds: number[], comment?: string) {
+  return http.put<BpmTaskBatchItem[]>('/bpm/task/batch-approve', { comment, taskIds })
+}
+
+/** 批量驳回（意见整批统一必填，单批最多 50 条，逐条独立事务） */
+export function batchRejectBpmTask(taskIds: number[], comment: string, returnMode: 'restart' | 'resume') {
+  return http.put<BpmTaskBatchItem[]>('/bpm/task/batch-reject', { comment, returnMode, taskIds })
+}
+
+/** 任务转办（把待办转给目标用户） */
+export function transferBpmTask(taskId: number, targetUserId: number, reason?: string) {
+  return http.put<boolean>('/bpm/task/transfer', { reason, targetUserId, taskId })
+}
+
+/** 任务加签（仅单人与会签节点，给目标用户追加同节点任务） */
+export function addSignBpmTask(taskId: number, targetUserIds: number[], reason?: string) {
+  return http.put<boolean>('/bpm/task/add-sign', { reason, targetUserIds, taskId })
 }

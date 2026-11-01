@@ -56,6 +56,7 @@ export interface TaxLedgerMaterialVO {
   materType?: number // 附件类型（字典 tax_mater_type）
   fileName?: string // 文件名
   fileUrl?: string // 文件地址
+  dueAmount?: number // 申报表解析出的本期应补（退）税额：空=未解析/解析失败（从严要求完税证明）
   remark?: string // 备注
   createTime?: string // 创建时间
 }

@@ -1,18 +1,9 @@
 <template>
-  <CompareList
-    title="财务快报"
-    :fetch-page="getFinancialReportPage"
-    :source-labels="[
-      { key: 'currentPeriodFile', label: '当期报表包' },
-      { key: 'lastYearPeriodFile', label: '上年同期包' },
-    ]"
-    download-permission="fin:financial-report:query"
-  />
+  <FileTaskList node-type="financial_report" />
 </template>
 
 <script lang="ts" setup>
-import CompareList from '../components/compare-list.vue'
-import { getFinancialReportPage } from '@/api/fin/financialReport'
+import FileTaskList from '../components/file-task-list.vue'
 
 defineOptions({
   name: 'FinFinancialReportList',

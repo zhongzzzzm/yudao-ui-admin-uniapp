@@ -3,7 +3,14 @@
     <!-- 顶部导航栏 -->
     <wd-navbar
       left-arrow title="报送任务" placeholder safe-area-inset-top fixed @click-left="handleBack"
-    />
+    >
+      <template #right>
+        <view v-if="canCreate" class="flex items-center gap-4rpx text-28rpx text-[#018d71]" @click="goCreate">
+          <wd-icon name="add" size="32rpx" />
+          新建
+        </view>
+      </template>
+    </wd-navbar>
 
     <!-- 阶段筛选条 -->
     <view class="flex gap-16rpx overflow-x-auto bg-white px-24rpx py-16rpx">
@@ -75,7 +82,8 @@
 <script lang="ts" setup>
 import type { TaxReportFilingVO } from '@/api/rpt/filing'
 import { navigateBackPlus } from '@/utils'
-import { ref } from 'vue'
+import { useAccess } from '@/hooks/useAccess'
+import { computed, ref } from 'vue'
 import {
   FILING_COMBINED_STAGE,
   FILING_STAGE_TAG_TYPE,
@@ -90,6 +98,11 @@ defineOptions({
 function handleBack() {
   navigateBackPlus()
 }
+
+const { hasAccessByCodes } = useAccess()
+
+/** 新建权限（rpt:tax-report-filing:create） */
+const canCreate = computed(() => hasAccessByCodes(['rpt:tax-report-filing:create']))
 
 definePage({
   style: {
@@ -157,5 +170,10 @@ function deadlineHint(item: TaxReportFilingVO): { text: string, danger: boolean 
 
 function goDetail(item: TaxReportFilingVO) {
   uni.navigateTo({ url: `/pages-rpt/filing/detail?id=${item.id}` })
+}
+
+/** 新建报送任务 */
+function goCreate() {
+  uni.navigateTo({ url: '/pages-rpt/filing/form' })
 }
 </script>

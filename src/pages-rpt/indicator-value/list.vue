@@ -36,7 +36,7 @@
           v-for="item in list"
           :key="item.id"
           class="mb-24rpx overflow-hidden rounded-16rpx bg-white p-24rpx shadow-sm"
-          @click="openTrace(item)"
+          @click="goTrace(item)"
         >
           <view class="mb-12rpx flex items-center justify-between">
             <view class="line-clamp-1 flex-1 text-28rpx text-[#333] font-500">
@@ -63,80 +63,21 @@
               计算时间：{{ item.computeTime ? formatDateTime(item.computeTime) : '-' }}
             </view>
           </view>
+          <view class="mt-12rpx border-t border-t-[#f7f8f9] pt-12rpx text-right text-24rpx text-[#018d71]">
+            溯源 ›
+          </view>
         </view>
       </view>
     </z-paging>
-
-    <!-- 溯源弹层：来源明细 + LINK 链路树 -->
-    <wd-popup v-model="showTrace" position="bottom" custom-class="rounded-t-24rpx" closable safe-area-inset-bottom>
-      <view class="max-h-75vh overflow-auto p-24rpx">
-        <view class="mb-8rpx text-30rpx text-[#333] font-500">
-          指标溯源
-        </view>
-        <view class="mb-16rpx text-24rpx text-[#999]">
-          {{ activeItem?.indicatorName || '-' }} · {{ activeItem?.batchDate || '-' }}
-        </view>
-        <view v-if="traceLoading" class="flex justify-center py-40rpx">
-          <wd-loading color="#018d71" />
-        </view>
-        <view v-else-if="traceTree" class="space-y-12rpx">
-          <view
-            v-for="(node, index) in traceNodes"
-            :key="index"
-            class="rounded-12rpx p-20rpx"
-            :class="index === 0 ? 'bg-[#e6f7f1]' : 'bg-[#f7f8f9]'"
-            :style="{ marginLeft: `${Math.min(index, 4) * 24}rpx` }"
-          >
-            <view class="flex items-center justify-between">
-              <text class="line-clamp-1 flex-1 text-26rpx text-[#333] font-500">
-                {{ node.value.indicatorName || node.value.indicatorCode || `指标 #${node.value.indicatorId}` }}
-              </text>
-              <text class="ml-12rpx flex-shrink-0 text-26rpx text-[#018d71] font-500">
-                {{ node.value.value ?? '-' }}
-              </text>
-            </view>
-            <view
-              v-for="source in node.sources"
-              :key="source.id"
-              class="mt-8rpx text-24rpx text-[#777]"
-            >
-              <view class="line-clamp-1">
-                {{ SOURCE_TYPE_LABELS[source.sourceType] || '来源' }}：
-                <template v-if="source.sourceType === 1 || source.sourceType === 2">
-                  {{ source.sourceFileName || '底稿' }} · {{ source.sheetName || `Sheet${(source.sheetIndex ?? 0) + 1}` }} · {{ source.sourceType === 1 ? source.cellRef : `行 ${source.rowNo ?? '-'}` }}
-                </template>
-                <template v-else-if="source.sourceType === 6">
-                  {{ source.sourceReportName || '报表' }}
-                </template>
-                <template v-else>
-                  {{ source.remark || source.transformDesc || '-' }}
-                </template>
-                <text v-if="source.rawValue != null" class="text-[#018d71]">（原值 {{ source.rawValue }}）</text>
-              </view>
-              <view
-                v-if="sourceFileUrl(source)"
-                class="mt-4rpx text-[#018d71]"
-                @click="previewSource(source)"
-              >
-                查看原文 ›
-              </view>
-            </view>
-          </view>
-        </view>
-        <view v-else class="py-40rpx text-center text-26rpx text-[#999]">
-          暂无溯源数据
-        </view>
-      </view>
-    </wd-popup>
   </view>
 </template>
 
 <script lang="ts" setup>
-import type { DataIndicatorValueVO, IndicatorSourceTreeNodeVO, IndicatorValueSourceVO } from '@/api/rpt/dataIndicatorValue'
+import type { DataIndicatorValueVO } from '@/api/rpt/dataIndicatorValue'
 import { navigateBackPlus } from '@/utils'
-import { getDataIndicatorValuePage, getIndicatorValueSourceTree, SOURCE_TYPE_LABELS } from '@/api/rpt/dataIndicatorValue'
+import { getDataIndicatorValuePage } from '@/api/rpt/dataIndicatorValue'
 import { formatDateTime } from '@/utils/date'
-import { computed, ref } from 'vue'
+import { ref } from 'vue'
 
 defineOptions({
   name: 'RptIndicatorValueList',
@@ -183,50 +124,10 @@ async function queryList(pageNo: number, pageSize: number) {
   }
 }
 
-// ========== 溯源弹层 ==========
+// ========== 溯源页跳转 ==========
 
-const showTrace = ref(false)
-const activeItem = ref<DataIndicatorValueVO>()
-const traceTree = ref<IndicatorSourceTreeNodeVO>()
-const traceLoading = ref(false)
-
-/** 链路树按「本值 → 逐级 LINK 引用」拍平为缩进节点列表 */
-const traceNodes = computed<IndicatorSourceTreeNodeVO[]>(() => {
-  const nodes: IndicatorSourceTreeNodeVO[] = []
-  const walk = (node: IndicatorSourceTreeNodeVO) => {
-    nodes.push(node)
-    node.children?.forEach(walk)
-  }
-  if (traceTree.value) {
-    walk(traceTree.value)
-  }
-  return nodes
-})
-
-function openTrace(item: DataIndicatorValueVO) {
-  activeItem.value = item
-  traceTree.value = undefined
-  showTrace.value = true
-  traceLoading.value = true
-  getIndicatorValueSourceTree(item.id).then((tree) => {
-    traceTree.value = tree
-  }).finally(() => {
-    traceLoading.value = false
-  })
-}
-
-function sourceFileUrl(source: IndicatorValueSourceVO): string | undefined {
-  return source.sourceType === 6 ? source.sourceReportUrl : source.sourceFileUrl
-}
-
-/** 统一走 kkfileview 预览 */
-function previewSource(source: IndicatorValueSourceVO) {
-  const url = sourceFileUrl(source)
-  if (!url) {
-    return
-  }
-  uni.navigateTo({
-    url: `/pages/common/preview?fileUrl=${encodeURIComponent(url)}&fileName=${encodeURIComponent(source.sourceFileName || source.sourceReportName || '')}`,
-  })
+/** 进入指标值溯源页（取数链路 / 来源明细 / 底稿原文预览 / 单指标重算） */
+function goTrace(item: DataIndicatorValueVO) {
+  uni.navigateTo({ url: `/pages-rpt/indicator-value/trace?id=${item.id}` })
 }
 </script>

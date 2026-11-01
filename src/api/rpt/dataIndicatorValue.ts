@@ -88,3 +88,12 @@ export function getIndicatorValueSources(id: number) {
 export function getIndicatorValueSourceTree(id: number, maxDepth = 3) {
   return http.get<IndicatorSourceTreeNodeVO>(`/rpt/data-indicator-value/${id}/source-tree`, { maxDepth })
 }
+
+/** 触发计算（异步）：按维度或指定指标在指定数据版本重算并落库 */
+export function computeDataIndicatorValue(params: {
+  batchId: number // 数据版本ID（必填）
+  indicatorId?: number // 指标ID（指定单指标重算时传）
+  dimensionId?: number // 维度ID（按维度整批重算时传）
+}) {
+  return http.post<boolean>('/rpt/data-indicator-value/compute', undefined, params)
+}

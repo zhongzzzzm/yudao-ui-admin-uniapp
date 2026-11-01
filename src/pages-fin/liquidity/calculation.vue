@@ -36,6 +36,8 @@
             </view>
           </view>
         </view>
+        <!-- 底部按钮占位 -->
+        <view v-if="canCreate" class="h-140rpx" />
       </view>
     </z-paging>
 
@@ -59,6 +61,16 @@
         </view>
       </view>
     </wd-popup>
+
+    <!-- 发起测算入口 -->
+    <view
+      v-if="canCreate"
+      class="fixed inset-x-0 bottom-0 z-10 flex border-t border-t-[#f0f0f0] bg-white px-24rpx pb-[env(safe-area-inset-bottom)] pt-16rpx"
+    >
+      <wd-button class="flex-1" type="primary" @click="goCreate">
+        发起测算
+      </wd-button>
+    </view>
   </view>
 </template>
 
@@ -68,6 +80,7 @@ import { navigateBackPlus } from '@/utils'
 import { formatDateTime } from '@/utils/date'
 import { computed, ref } from 'vue'
 import { getLiquidityCalculationPage } from '@/api/fin/liquidity'
+import { useAccess } from '@/hooks/useAccess'
 
 defineOptions({
   name: 'FinLiquidityCalculationList',
@@ -129,5 +142,14 @@ const detailFields = computed(() => {
 function openDetail(item: LiquidityCalculationVO) {
   activeItem.value = item
   showDetail.value = true
+}
+
+/** 发起测算权限（fin:liquidity-calculation:create） */
+const { hasAccessByCodes } = useAccess()
+const canCreate = computed(() => hasAccessByCodes(['fin:liquidity-calculation:create']))
+
+/** 跳转发起测算表单 */
+function goCreate() {
+  uni.navigateTo({ url: '/pages-fin/liquidity/calculation-form' })
 }
 </script>

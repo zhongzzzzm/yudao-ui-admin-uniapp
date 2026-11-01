@@ -87,3 +87,39 @@ export function getDepositInterestSettlements(calculationId: number) {
 export function getDepositInterestDetailPage(params: PageParam & { settlementId?: number }) {
   return http.get<PageResult<DepositInterestDetailVO>>('/fin/deposit-interest/detail-page', params)
 }
+
+/** 发起存款结息测算入参（后端同步计算并落库） */
+export interface DepositInterestSaveReq {
+  id?: number // 编号（更新重算时必填）
+  /** 备注 */
+  description?: string
+  /** 三栏式明细账文件 URL（必填） */
+  fileUrl: string
+  /** 原文件名 */
+  fileName?: string
+  /** 计算方式：1=按结息点核对（默认）、2=任意期间试算 */
+  calcMode?: number
+  /** 利率段列表（按结息点核对模式必填；区间含起始日不含截止日，相邻段无缝衔接） */
+  rateSegments?: DepositRateSegmentVO[]
+  /** 试算起始日（含，仅试算模式） */
+  periodStart?: string
+  /** 试算截止日（不含，仅试算模式） */
+  periodEnd?: string
+  /** 试算年利率（%，仅试算模式） */
+  annualRate?: number
+}
+
+/** 发起存款结息测算（同步计算） */
+export function createDepositInterest(data: DepositInterestSaveReq) {
+  return http.post<number>('/fin/deposit-interest/create', data)
+}
+
+/** 修改并重算存款结息测算 */
+export function updateDepositInterest(data: DepositInterestSaveReq) {
+  return http.put<boolean>('/fin/deposit-interest/update', data)
+}
+
+/** 删除存款结息测算 */
+export function deleteDepositInterest(id: number) {
+  return http.delete<boolean>('/fin/deposit-interest/delete', undefined, { id })
+}

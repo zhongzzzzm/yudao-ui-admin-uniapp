@@ -20,7 +20,7 @@
         </view>
 
         <template v-else-if="company">
-          <!-- 头部：公司名 + 投放状态 -->
+          <!-- 头部：公司名 + 投放状态 + 编辑入口 -->
           <view class="mb-20rpx rounded-16rpx bg-white p-24rpx shadow-sm">
             <view class="mb-8rpx flex items-center justify-between">
               <view class="line-clamp-1 flex-1 text-30rpx text-[#333] font-500">
@@ -34,6 +34,9 @@
               >
                 {{ getDictLabel(DICT_TYPE.TAX_LOAN_STATUS, company.investStatus) || '-' }}
               </wd-tag>
+              <view v-if="canEdit" class="ml-16rpx flex-shrink-0 p-8rpx" @click="goEdit">
+                <wd-icon name="edit" size="36rpx" color="#018d71" />
+              </view>
             </view>
             <view class="text-24rpx text-[#999]">
               公司代码：{{ company.companyCode || '-' }}
@@ -78,6 +81,7 @@ import { DICT_TYPE } from '@/utils/constants'
 import { formatDate } from '@/utils/date'
 import { computed, ref } from 'vue'
 import { getTaxCompany } from '@/api/tax/company'
+import { useAccess } from '@/hooks/useAccess'
 
 defineOptions({
   name: 'TaxCompanyDetail',
@@ -94,7 +98,15 @@ definePage({
   },
 })
 
+const { hasAccessByCodes } = useAccess()
 const companyId = ref<number>()
+/** 编辑公司（tax:company:update） */
+const canEdit = computed(() => hasAccessByCodes(['tax:company:update']))
+
+function goEdit() {
+  uni.navigateTo({ url: `/pages-tax/company/form?id=${companyId.value}` })
+}
+
 const loading = ref(false)
 const loadFailed = ref(false)
 const company = ref<TaxCompanyVO>()
@@ -150,17 +162,27 @@ const groups = computed(() => {
   ]
 })
 
+/** 从编辑页返回时刷新详情（首次 onShow 时尚未拿到 id，交给 onLoad 加载） */
+let hasLoaded = false
+
 async function load() {
   loading.value = true
   loadFailed.value = false
   try {
     company.value = await getTaxCompany(companyId.value!)
+    hasLoaded = true
   } catch {
     loadFailed.value = true
   } finally {
     loading.value = false
   }
 }
+
+onShow(() => {
+  if (hasLoaded) {
+    load()
+  }
+})
 
 onLoad((query) => {
   companyId.value = Number(query?.id)

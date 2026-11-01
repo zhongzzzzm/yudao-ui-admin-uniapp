@@ -63,6 +63,16 @@
         </view>
       </view>
     </z-paging>
+
+    <!-- 新建测算入口 -->
+    <wd-button
+      type="primary"
+      class="fixed bottom-120rpx right-32rpx z-10 h-88rpx w-88rpx rounded-full p-0 shadow-lg"
+      custom-class="quote-fab"
+      @click="goCreate"
+    >
+      <wd-icon name="add" size="44rpx" />
+    </wd-button>
   </view>
 </template>
 
@@ -132,4 +142,18 @@ function statusTagType(status?: number): 'success' | 'info' {
 function goDetail(item: QuoteCalcVO) {
   uni.navigateTo({ url: `/pages-fl/quotecalc/detail?id=${item.id}` })
 }
+
+/** 新建报价测算（移动端编辑页） */
+function goCreate() {
+  uni.navigateTo({ url: '/pages-fl/quotecalc/edit' })
+}
 </script>
+
+<style lang="scss" scoped>
+:deep(.quote-fab) {
+  height: 88rpx;
+  width: 88rpx;
+  padding: 0;
+  border-radius: 50%;
+}
+</style>

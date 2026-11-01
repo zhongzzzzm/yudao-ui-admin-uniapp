@@ -2,8 +2,8 @@ import type { PageParam, PageResult } from '@/http/types'
 import { http } from '@/http/http'
 
 /**
- * 报价测算（App 只读查看）：方案分页/详情，子表随详情返回。
- * 新建/编辑/测算等强编辑操作在 PC 端完成。
+ * 报价测算：方案分页/详情（子表随详情返回）+ 移动端编辑与测算操作。
+ * 新建/编辑走整体提交（主表 + 子表），保存即由后端自动测算。
  */
 
 /** 投放计划子表行 */
@@ -110,4 +110,130 @@ export function getQuoteCalcPage(params: PageParam & {
 /** 获得报价测算方案详情（主表 + 子表） */
 export function getQuoteCalc(id: number) {
   return http.get<QuoteCalcVO>('/fl/quote-calc/get', { id })
+}
+
+/** 获得报价测算方案精简列表（下拉/比对基准选择用） */
+export function getQuoteCalcSimpleList() {
+  return http.get<QuoteCalcVO[]>('/fl/quote-calc/simple-list')
+}
+
+// ==================== 编辑与测算操作（整体提交，保存即测算） ====================
+
+/** 预览试算（不落业务表，返回含步骤明细与结果快照的测算记录） */
+export function previewQuoteCalc(data: QuoteCalcVO) {
+  return http.post<QuoteTraceVO>('/fl/quote-calc/preview', data)
+}
+
+/** 创建报价测算（后端自动测算，成功才落库，返回新方案 id） */
+export function createQuoteCalc(data: QuoteCalcVO) {
+  return http.post<number>('/fl/quote-calc/create', data)
+}
+
+/** 更新报价测算（重新测算后落库） */
+export function updateQuoteCalc(data: QuoteCalcVO) {
+  return http.put<boolean>('/fl/quote-calc/update', data)
+}
+
+/** 重新测算（用已保存参数重算，不修改参数） */
+export function recalculateQuoteCalc(id: number) {
+  return http.put<boolean>(`/fl/quote-calc/recalculate?id=${id}`)
+}
+
+/** 确认方案（锁定参数与最新测算结果） */
+export function confirmQuoteCalc(id: number) {
+  return http.put<boolean>(`/fl/quote-calc/confirm?id=${id}`)
+}
+
+/** 取消确认（回到草稿态，参数可再次修改） */
+export function cancelConfirmQuoteCalc(id: number) {
+  return http.put<boolean>(`/fl/quote-calc/cancel-confirm?id=${id}`)
+}
+
+/** 复制方案（生成新编号、状态为草稿，返回新方案 id） */
+export function copyQuoteCalc(id: number) {
+  return http.post<number>(`/fl/quote-calc/copy?id=${id}`)
+}
+
+/** 删除报价测算方案 */
+export function deleteQuoteCalc(id: number) {
+  return http.delete<boolean>(`/fl/quote-calc/delete?id=${id}`)
+}
+
+// ==================== 测算记录（历史版本，可观测） ====================
+
+/** 获得测算记录分页（历史版本列表） */
+export function getQuoteCalcTracePage(params: PageParam & {
+  quoteId?: number // 报价测算主表 id
+  traceType?: number // 测算类型：0 预览，1 保存生效，2 重算
+  status?: number // 状态：0 成功，1 失败
+}) {
+  return http.get<PageResult<QuoteTraceVO>>('/fl/quote-calc/trace/page', params)
+}
+
+/** 获得测算记录详情（含步骤明细、输入/输出快照） */
+export function getQuoteCalcTrace(traceId: number) {
+  return http.get<QuoteTraceVO>(`/fl/quote-calc/trace/get?traceId=${traceId}`)
+}
+
+/** 测算记录（含步骤明细） */
+export interface QuoteTraceVO {
+  id?: number // 测算记录 id
+  quoteId?: number // 报价测算主表 id
+  traceType?: number // 测算类型：0 预览，1 保存生效，2 重算
+  engineVersion?: string // 引擎版本号
+  inputSnapshot?: string // 测算入参快照 JSON
+  outputSnapshot?: string // 结果快照 JSON（解析后为 QuoteOutputSnapshotVO）
+  status?: number // 状态：0 成功，1 失败
+  errorMsg?: string // 失败原因
+  stepCount?: number // 步骤数
+  totalCostMs?: number // 总耗时（毫秒）
+  createTime?: number | string // 创建时间
+  steps?: QuoteTraceStepVO[] // 步骤明细
+}
+
+/** 测算步骤明细 */
+export interface QuoteTraceStepVO {
+  stepNo?: number // 步骤序号
+  stepCode?: string // 步骤编码
+  stepName?: string // 步骤名称
+  status?: number // 状态：0 成功，1 跳过，2 失败
+  inputJson?: string // 输入增量 JSON
+  outputJson?: string // 输出 JSON
+  formulaJson?: string // 公式代入列表 JSON
+  skipReason?: string // 跳过原因
+  errorMsg?: string // 失败原因
+  costMs?: number // 耗时（毫秒）
+}
+
+/** 结果快照（outputSnapshot 解析后） */
+export interface QuoteOutputSnapshotVO {
+  indicators?: Record<string, number | string | null> // 汇总指标（键见指标展示映射）
+  rows?: QuoteInoutRowVO[] // 收支计划行
+  accruals?: QuoteAccrualRowVO[] // 计提表行
+}
+
+/** 收支计划行 */
+export interface QuoteInoutRowVO {
+  period?: number // 期次（0 表示非租金期事件）
+  calDate?: string // 计算日期
+  planDate?: string // 计划日期
+  eventCode?: string // 事件编码
+  eventName?: string // 事件名称
+  direction?: number // 方向：1 流入，-1 流出
+  cash?: number // 发生额（含税）
+  corpus?: number // 本金（去税）
+  interest?: number // 利息（去税）
+  corpusBalance?: number // 剩余本金（去税）
+  taxCash?: number // 增值税额
+  makeMethod?: number // 生成方式：0 系统，1 手工
+  memo?: string // 备注
+}
+
+/** 计提表行（中粤算法） */
+export interface QuoteAccrualRowVO {
+  accrualType?: number // 计提类型：1 租金利息计提，2 手续费计提
+  month?: string // 计提月份
+  calDate?: string // 计算日期
+  cash?: number // 本月计提金额
+  memo?: string // 备注
 }

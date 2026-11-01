@@ -5,12 +5,16 @@ import { useToast } from '@wot-ui/ui/components/wd-toast'
 import { computed, ref } from 'vue'
 
 import {
+  addSignBpmTask,
   approveBpmTask,
   getBpmTaskDetail,
   rejectBpmTask,
   remindBpmInstance,
   returnBpmTask,
+  transferBpmTask,
 } from '@/api/bpm/task'
+import UserPicker from '@/components/system-select/user-picker.vue'
+import UserSearchPicker from '@/components/system-select/user-search-picker.vue'
 import { formatDateTime } from '@/utils/date'
 
 defineOptions({ name: 'BpmTaskDetail' })
@@ -177,6 +181,83 @@ async function onRejectConfirm() {
   }
 }
 
+/** 转办弹窗：转给目标用户后本人不再处理该任务 */
+const transferOpen = ref(false)
+const transferUserId = ref<number>()
+const transferReason = ref('')
+
+/** 加签弹窗：给目标用户追加同节点任务（仅单人与会签节点支持） */
+const addSignOpen = ref(false)
+const addSignUserIds = ref<number[]>([])
+const addSignReason = ref('')
+const addSignPickerRef = ref<InstanceType<typeof UserPicker>>()
+
+function openTransfer() {
+  transferUserId.value = undefined
+  transferReason.value = ''
+  transferOpen.value = true
+}
+
+function openAddSign() {
+  addSignUserIds.value = []
+  addSignReason.value = ''
+  addSignOpen.value = true
+}
+
+/** 确认转办 */
+function onTransferConfirm() {
+  if (!taskId.value) {
+    return
+  }
+  if (!transferUserId.value) {
+    toast.show('请选择转办对象')
+    return
+  }
+  dialog.confirm({
+    title: '确认转办',
+    msg: '转办后该任务将移交对方处理，本人不再参与本节点审批，确定转办？',
+  }).then(async () => {
+    acting.value = true
+    try {
+      await transferBpmTask(taskId.value, transferUserId.value!, transferReason.value.trim() || undefined)
+      toast.success('已转办')
+      transferOpen.value = false
+      await load()
+    } catch {
+      toast.show('操作失败，请刷新重试')
+    } finally {
+      acting.value = false
+    }
+  }).catch(() => {})
+}
+
+/** 确认加签 */
+function onAddSignConfirm() {
+  if (!taskId.value) {
+    return
+  }
+  if (addSignUserIds.value.length === 0) {
+    toast.show('请选择加签对象')
+    return
+  }
+  dialog.confirm({
+    title: '确认加签',
+    msg: `将为选中的 ${addSignUserIds.value.length} 位用户追加本节点审批任务，确定加签？`,
+  }).then(async () => {
+    acting.value = true
+    try {
+      await addSignBpmTask(taskId.value, addSignUserIds.value, addSignReason.value.trim() || undefined)
+      toast.success('已加签')
+      addSignOpen.value = false
+      await load()
+    } catch {
+      toast.show('操作失败，请刷新重试')
+    } finally {
+      acting.value = false
+    }
+  }).catch(() => {})
+}
+
 onLoad((query) => {
   if (query?.taskId) {
     taskId.value = Number(query.taskId)
@@ -319,7 +400,93 @@ function handleBack() {
           通过
         </wd-button>
       </view>
+      <!-- 转办 / 加签：任务移交或追加处理人 -->
+      <view class="mt-16rpx flex gap-16rpx">
+        <wd-button :disabled="acting" plain block @click="openTransfer">
+          转办
+        </wd-button>
+        <wd-button :disabled="acting" plain block @click="openAddSign">
+          加签
+        </wd-button>
+      </view>
     </view>
+
+    <!-- 转办弹层 -->
+    <wd-popup v-model="transferOpen" closable custom-class="rounded-t-24rpx" position="bottom" safe-area-inset-bottom>
+      <view class="p-24rpx pb-48rpx">
+        <view class="mb-16rpx text-30rpx font-500">
+          任务转办
+        </view>
+        <UserSearchPicker
+          v-model="transferUserId"
+          label="转办给"
+          placeholder="请选择转办对象"
+        />
+        <view class="yd-search-form-item">
+          <view class="yd-search-form-label">
+            转办原因
+          </view>
+          <wd-textarea
+            v-model="transferReason"
+            :maxlength="200"
+            clearable
+            placeholder="请输入转办原因（选填）"
+            custom-class="bg-[#f7f8fa] rounded-xl"
+          />
+        </view>
+        <wd-button
+          block class="mt-24rpx" type="primary" :disabled="acting"
+          @click="onTransferConfirm"
+        >
+          确认转办
+        </wd-button>
+      </view>
+    </wd-popup>
+
+    <!-- 加签弹层 -->
+    <wd-popup v-model="addSignOpen" closable custom-class="rounded-t-24rpx" position="bottom" safe-area-inset-bottom>
+      <view class="p-24rpx pb-48rpx">
+        <view class="mb-16rpx text-30rpx font-500">
+          任务加签
+        </view>
+        <!-- 隐藏式多选用户选择器：由下方触发区 open -->
+        <UserPicker
+          ref="addSignPickerRef"
+          v-model="addSignUserIds"
+          type="checkbox"
+          title="选择加签对象"
+        />
+        <view class="yd-search-form-item" @click="addSignPickerRef?.open()">
+          <view class="yd-search-form-label">
+            加签对象
+          </view>
+          <view class="min-h-72rpx flex items-center gap-12rpx rounded-8rpx bg-[#f7f8fa] px-24rpx text-28rpx">
+            <text class="min-w-0 flex-1 truncate" :class="addSignUserIds.length > 0 ? 'text-[#333]' : 'text-[#999]'">
+              {{ addSignUserIds.length > 0 ? `已选 ${addSignUserIds.length} 人` : '请选择加签对象（可多选）' }}
+            </text>
+            <wd-icon name="arrow-down" size="24rpx" color="#999" />
+          </view>
+        </view>
+        <view class="yd-search-form-item">
+          <view class="yd-search-form-label">
+            加签原因
+          </view>
+          <wd-textarea
+            v-model="addSignReason"
+            :maxlength="200"
+            clearable
+            placeholder="请输入加签原因（选填）"
+            custom-class="bg-[#f7f8fa] rounded-xl"
+          />
+        </view>
+        <wd-button
+          block class="mt-24rpx" type="primary" :disabled="acting"
+          @click="onAddSignConfirm"
+        >
+          确认加签
+        </wd-button>
+      </view>
+    </wd-popup>
 
     <!-- 驳回 / 退回方式选择弹层 -->
     <wd-popup v-model="rejectOpen" closable custom-class="rounded-t-24rpx" position="bottom" safe-area-inset-bottom>

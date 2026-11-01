@@ -153,15 +153,26 @@
             暂无对照数据
           </view>
         </template>
+        <view class="h-180rpx" />
       </template>
     </scroll-view>
+
+    <!-- 底部操作栏：重新核对（用批次留存的导入数据重算比对） -->
+    <view v-if="batch && batch.status !== 0 && canRun" class="absolute inset-x-0 bottom-0 border-t border-t-[#f0f0f0] bg-white px-24rpx pb-[env(safe-area-inset-bottom)] pt-16rpx">
+      <wd-button type="primary" block :loading="running" :disabled="running" @click="handleRun">
+        重新核对
+      </wd-button>
+    </view>
   </view>
 </template>
 
 <script lang="ts" setup>
 import type { QuoteVerifyBatchVO, QuoteVerifyCompareRowVO, QuoteVerifyDiffVO } from '@/api/fl/quoteVerify'
 import { navigateBackPlus } from '@/utils'
-import { getQuoteVerify, getQuoteVerifyCompareRows, getQuoteVerifyDiffPage, VERIFY_FIELD_LABELS } from '@/api/fl/quoteVerify'
+import { useDialog } from '@wot-ui/ui/components/wd-dialog'
+import { useToast } from '@wot-ui/ui/components/wd-toast'
+import { getQuoteVerify, getQuoteVerifyCompareRows, getQuoteVerifyDiffPage, runQuoteVerify, VERIFY_FIELD_LABELS } from '@/api/fl/quoteVerify'
+import { useAccess } from '@/hooks/useAccess'
 import { formatMoney, formatPercent } from '@/utils/format'
 import { computed, ref } from 'vue'
 
@@ -180,9 +191,17 @@ function handleBack() {
   navigateBackPlus()
 }
 
+const toast = useToast()
+const dialog = useDialog()
+const { hasAccessByCodes } = useAccess()
+
+/** 重新核对权限（fl:quote-verify:create） */
+const canRun = computed(() => hasAccessByCodes(['fl:quote-verify:create']))
+
 const PAGE_SIZE = 20
 
 const loading = ref(false)
+const running = ref(false)
 const batch = ref<QuoteVerifyBatchVO>()
 const batchId = ref<number>()
 
@@ -300,6 +319,51 @@ async function loadDetail() {
     }
   } finally {
     loading.value = false
+  }
+}
+
+// ========== 重新核对 ==========
+
+/** 重新核对：用批次留存的导入数据重算比对（异步，提交后轮询状态） */
+function handleRun() {
+  dialog.confirm({
+    title: '重新核对',
+    msg: '确认用该批次留存的导入数据重新核对？核对为异步执行，完成后结果将刷新。',
+  }).then(async () => {
+    running.value = true
+    try {
+      await runQuoteVerify(batchId.value!)
+      toast.show('已提交重新核对')
+      pollStatus(0)
+    } catch (e: any) {
+      toast.show(e?.message || '重新核对提交失败')
+      running.value = false
+    }
+  }).catch(() => {})
+}
+
+/** 核对中轮询（3 秒一次，最多 10 次），完成后刷新报告 */
+async function pollStatus(times: number) {
+  if (times >= 10) {
+    running.value = false
+    toast.show('核对耗时较长，可稍后下拉刷新查看')
+    return
+  }
+  await new Promise(resolve => setTimeout(resolve, 3000))
+  try {
+    const latest = await getQuoteVerify(batchId.value!)
+    if (latest.status === 0) {
+      pollStatus(times + 1)
+      return
+    }
+    running.value = false
+    currentView.value = 'diff'
+    compareRows.value = []
+    diffHasMore.value = false
+    await loadDetail()
+    toast.show('核对完成')
+  } catch {
+    running.value = false
   }
 }
 </script>

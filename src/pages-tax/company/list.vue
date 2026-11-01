@@ -2,7 +2,16 @@
   <view class="yd-page-container yd-page-container-paging">
     <wd-navbar
       left-arrow title="公司定义" placeholder safe-area-inset-top fixed @click-left="handleBack"
-    />
+    >
+      <template #right>
+        <view class="flex items-center gap-24rpx">
+          <text v-if="canImport" class="text-28rpx text-[#333]" @click="goImport">导入</text>
+          <view v-if="canCreate" @click="goCreate">
+            <wd-icon name="plus-circle" size="40rpx" color="#333" />
+          </view>
+        </view>
+      </template>
+    </wd-navbar>
 
     <!-- 搜索：按公司名称 -->
     <view class="bg-white px-24rpx py-16rpx">
@@ -60,7 +69,8 @@ import type { TaxCompanyVO } from '@/api/tax/company'
 import { navigateBackPlus } from '@/utils'
 import { getDictLabel } from '@/hooks/useDict'
 import { DICT_TYPE } from '@/utils/constants'
-import { ref } from 'vue'
+import { useAccess } from '@/hooks/useAccess'
+import { computed, ref } from 'vue'
 import { getTaxCompanyPage } from '@/api/tax/company'
 
 defineOptions({
@@ -78,9 +88,34 @@ definePage({
   },
 })
 
+const { hasAccessByCodes } = useAccess()
+/** 新增公司（tax:company:create） */
+const canCreate = computed(() => hasAccessByCodes(['tax:company:create']))
+/** 导入公司（tax:company:import） */
+const canImport = computed(() => hasAccessByCodes(['tax:company:import']))
+
+function goCreate() {
+  uni.navigateTo({ url: '/pages-tax/company/form' })
+}
+
+function goImport() {
+  uni.navigateTo({ url: '/pages-tax/company/import' })
+}
+
+const pagingRef = ref<any>()
+/** 表单/导入保存后刷新列表 */
+function onCompanyChanged() {
+  pagingRef.value?.reload()
+}
+onLoad(() => {
+  uni.$on('taxCompanyChanged', onCompanyChanged)
+})
+onUnload(() => {
+  uni.$off('taxCompanyChanged', onCompanyChanged)
+})
+
 const companyName = ref('')
 const list = ref<TaxCompanyVO[]>([])
-const pagingRef = ref<any>()
 
 function handleSearch() {
   pagingRef.value?.reload()

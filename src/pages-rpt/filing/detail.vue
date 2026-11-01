@@ -145,6 +145,15 @@
           预览结果文件
         </wd-button>
         <wd-button
+          v-if="canEdit"
+          class="flex-1"
+          plain
+          :disabled="acting"
+          @click="goEdit"
+        >
+          编辑
+        </wd-button>
+        <wd-button
           v-if="canExecute"
           class="flex-1"
           type="primary"
@@ -243,6 +252,9 @@ const activeSheet = ref(0)
 
 /** 执行权限（rpt:tax-report-filing:execute） */
 const canExecute = computed(() => hasAccessByCodes(['rpt:tax-report-filing:execute']))
+
+/** 编辑权限（rpt:tax-report-filing:update）：仅更新模板/数据版本等元数据 */
+const canEdit = computed(() => hasAccessByCodes(['rpt:tax-report-filing:update']))
 
 const stageLabel = computed(() =>
   (FILING_COMBINED_STAGE as Record<string, string>)[filing.value?.combinedStage ?? ''] ?? '待执行')
@@ -357,6 +369,11 @@ async function pollStatus(times: number) {
   } catch {
     acting.value = false
   }
+}
+
+/** 编辑任务（模板/数据版本等元数据） */
+function goEdit() {
+  uni.navigateTo({ url: `/pages-rpt/filing/form?id=${filingId.value}` })
 }
 
 /** 预览结果文件 */

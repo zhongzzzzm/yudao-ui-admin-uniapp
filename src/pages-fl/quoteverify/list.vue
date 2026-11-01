@@ -3,7 +3,14 @@
     <!-- 顶部导航栏 -->
     <wd-navbar
       left-arrow title="报价复核" placeholder safe-area-inset-top fixed @click-left="handleBack"
-    />
+    >
+      <template #right>
+        <view v-if="canCreate" class="flex items-center gap-4rpx text-28rpx text-[#018d71]" @click="goWizard">
+          <wd-icon name="add" size="32rpx" />
+          发起复核
+        </view>
+      </template>
+    </wd-navbar>
 
     <!-- 结论筛选条 -->
     <view class="flex gap-16rpx overflow-x-auto bg-white px-24rpx py-16rpx">
@@ -73,9 +80,10 @@
 <script lang="ts" setup>
 import type { QuoteVerifyBatchVO } from '@/api/fl/quoteVerify'
 import { navigateBackPlus } from '@/utils'
+import { useAccess } from '@/hooks/useAccess'
 import { formatDateTime } from '@/utils/date'
 import { formatMoney, formatPercent } from '@/utils/format'
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { getQuoteVerifyPage } from '@/api/fl/quoteVerify'
 
 defineOptions({
@@ -92,6 +100,11 @@ definePage({
 function handleBack() {
   navigateBackPlus()
 }
+
+const { hasAccessByCodes } = useAccess()
+
+/** 发起复核权限（fl:quote-verify:create） */
+const canCreate = computed(() => hasAccessByCodes(['fl:quote-verify:create']))
 
 /** 核对结论筛选：-1 全部 */
 const conclusionChips = [
@@ -151,5 +164,10 @@ function statusLabel(item: QuoteVerifyBatchVO): string {
 
 function goDetail(item: QuoteVerifyBatchVO) {
   uni.navigateTo({ url: `/pages-fl/quoteverify/detail?id=${item.id}` })
+}
+
+/** 进入导入复核向导（上传 → 解析 → 配置 → 发起核对） */
+function goWizard() {
+  uni.navigateTo({ url: '/pages-fl/quoteverify/wizard' })
 }
 </script>

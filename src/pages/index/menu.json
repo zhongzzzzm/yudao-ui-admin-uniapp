@@ -58,6 +58,30 @@
               "permission": "rpt:data-indicator-value:query"
             },
             {
+              "key": "rpt-indicator",
+              "name": "数据指标",
+              "icon": "mind-mapping",
+              "iconColor": "#1890ff",
+              "url": "/pages-rpt/indicator/list",
+              "permission": "rpt:data-indicator:query"
+            },
+            {
+              "key": "rpt-template",
+              "name": "报表模板版本",
+              "icon": "copy",
+              "iconColor": "#1890ff",
+              "url": "/pages-rpt/template/list",
+              "permission": "rpt:tax-report-template:query"
+            },
+            {
+              "key": "rpt-source-def",
+              "name": "底稿定义",
+              "icon": "folder",
+              "iconColor": "#1890ff",
+              "url": "/pages-rpt/source-def/list",
+              "permission": "rpt:source-file-def:query"
+            },
+            {
               "key": "rpt-recalc-log",
               "name": "计算联动日志",
               "icon": "loop",
@@ -95,6 +119,14 @@
               "iconColor": "#fa541c",
               "url": "/pages-tax/company/list",
               "permission": "tax:company:query"
+            },
+            {
+              "key": "tax-ledger-material",
+              "name": "台账附件",
+              "icon": "link",
+              "iconColor": "#fa541c",
+              "url": "/pages-tax/ledgermaterial/list",
+              "permission": "tax:ledger-material:query"
             }
           ]
         }
@@ -265,6 +297,14 @@
               "permission": "fin:bank-flow:query"
             },
             {
+              "key": "fin-company-contact",
+              "name": "公司通讯录",
+              "icon": "list",
+              "iconColor": "#1890ff",
+              "url": "/pages-fin/contact/list",
+              "permission": "fin:company-contact:query"
+            },
+            {
               "key": "fin-financial-report",
               "name": "财务快报",
               "icon": "dashboard",
@@ -327,6 +367,14 @@
               "iconColor": "#13c2c2",
               "url": "/pages-fin/liquidity/cashflow",
               "permission": "fin:liquidity-cash-flow:query"
+            },
+            {
+              "key": "fin-prematch",
+              "name": "预收挂账",
+              "icon": "pushpin",
+              "iconColor": "#fa8c16",
+              "url": "/pages-fin/prematch/list",
+              "permission": "fin:prematch:query"
             }
           ]
         }
@@ -346,6 +394,28 @@
               "icon": "send",
               "iconColor": "#1890ff",
               "url": "/pages-bpm/my-instance/index"
+            },
+            {
+              "key": "bpm-general",
+              "name": "通用申请单",
+              "icon": "edit",
+              "iconColor": "#722ed1",
+              "url": "/pages-bpm/general/index"
+            },
+            {
+              "key": "bpm-batch-approve",
+              "name": "批量审批",
+              "icon": "check-square",
+              "iconColor": "#1890ff",
+              "url": "/pages-bpm/batch-approve/index"
+            },
+            {
+              "key": "bpm-all-todo",
+              "name": "全部待办",
+              "icon": "user-group",
+              "iconColor": "#1890ff",
+              "url": "/pages-bpm/all-todo/index",
+              "permission": "bpm:task:query-all"
             },
             {
               "key": "bpm-done",
@@ -411,12 +481,80 @@
               "iconColor": "#36cfc9",
               "url": "/pages-system/post/index",
               "permission": "system:post:query"
+            },
+            {
+              "key": "menu",
+              "name": "菜单管理",
+              "icon": "menu",
+              "iconColor": "#2f54eb",
+              "url": "/pages-system/menu/index",
+              "permission": "system:menu:query"
+            },
+            {
+              "key": "datapermission",
+              "name": "数据权限规则",
+              "icon": "lock",
+              "iconColor": "#2f54eb",
+              "url": "/pages-system/datapermission/index",
+              "permission": "system:data-permission-rule:query"
+            },
+            {
+              "key": "holiday",
+              "name": "节假日日历",
+              "icon": "calendar-line",
+              "iconColor": "#2f54eb",
+              "url": "/pages-system/holiday/index",
+              "permission": "system:holiday:query"
+            }
+          ]
+        },
+        {
+          "key": "system-auth",
+          "name": "认证与接入",
+          "subGroups": [
+            {
+              "key": "system-auth-main",
+              "name": "",
+              "menus": [
+                {
+                  "key": "oauth2-client",
+                  "name": "OAuth2 客户端",
+                  "icon": "command",
+                  "iconColor": "#722ed1",
+                  "url": "/pages-system/oauth2/client/index",
+                  "permission": "system:oauth2-client:query"
+                },
+                {
+                  "key": "oauth2-token",
+                  "name": "访问令牌",
+                  "icon": "key",
+                  "iconColor": "#722ed1",
+                  "url": "/pages-system/oauth2/token/index",
+                  "permission": "system:oauth2-token:page"
+                },
+                {
+                  "key": "social-client",
+                  "name": "三方登录配置",
+                  "icon": "share-external",
+                  "iconColor": "#722ed1",
+                  "url": "/pages-system/social/client/index",
+                  "permission": "system:social-client:query"
+                },
+                {
+                  "key": "social-user",
+                  "name": "三方登录用户",
+                  "icon": "user-add",
+                  "iconColor": "#722ed1",
+                  "url": "/pages-system/social/user/index",
+                  "permission": "system:social-user:query"
+                }
+              ]
             }
           ]
         },
         {
           "key": "system-notify",
-          "name": "通知与字典",
+          "name": "通知与消息",
           "menus": [
             {
               "key": "notice",
@@ -433,6 +571,30 @@
               "iconColor": "#c41d7f",
               "url": "/pages-system/dict/index",
               "permission": "system:dict:query"
+            },
+            {
+              "key": "mail",
+              "name": "邮件管理",
+              "icon": "email",
+              "iconColor": "#1890ff",
+              "url": "/pages-system/mail/index",
+              "permissions": [
+                "system:mail-account:query",
+                "system:mail-template:query",
+                "system:mail-log:query"
+              ]
+            },
+            {
+              "key": "wecom",
+              "name": "企微机器人",
+              "icon": "message",
+              "iconColor": "#52c41a",
+              "url": "/pages-system/wecom/index",
+              "permissions": [
+                "system:wecom-webhook:query",
+                "system:wecom-template:query",
+                "system:wecom-log:query"
+              ]
             }
           ]
         },
@@ -515,21 +677,19 @@
       ]
     },
     {
-      "key": "ai",
-      "name": "智能助手",
+      "key": "dashboard",
+      "name": "数据看板",
       "subGroups": [
         {
-          "key": "ai-main",
+          "key": "dashboard-main",
           "name": "",
           "menus": [
             {
-              "key": "ai-chat",
-              "name": "智能员工",
-              "icon": "chat",
-              "iconColor": "#722ed1",
-              "url": "/pages-ai/employee/index",
-              "permission": "ai:assistant:use",
-              "description": "选择岗位化 AI 员工对话"
+              "key": "dashboard-analytics",
+              "name": "分析看板",
+              "icon": "dashboard",
+              "iconColor": "#13c2c2",
+              "url": "/pages/analytics/index"
             }
           ]
         }

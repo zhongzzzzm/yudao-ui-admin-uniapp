@@ -194,8 +194,26 @@
             </view>
           </view>
         </view>
+
+        <!-- 底部按钮占位，避免固定按钮遮挡最后一张卡片 -->
+        <view v-if="showBottomBar" class="h-140rpx" />
       </template>
     </scroll-view>
+
+    <!-- 固定底部操作：计算过程（有测算记录时）+ 编辑入口（草稿态可编辑，已锁定方案在 PC 端或取消确认后编辑） -->
+    <view
+      v-if="showBottomBar"
+      class="fixed inset-x-0 bottom-0 z-10 border-t border-t-[#f0f0f0] bg-white px-24rpx pb-[env(safe-area-inset-bottom)] pt-16rpx"
+    >
+      <view class="flex gap-20rpx">
+        <wd-button v-if="quote?.latestTraceId" class="flex-1" plain @click="goTrace">
+          计算过程
+        </wd-button>
+        <wd-button v-if="status !== 1" class="flex-1" type="primary" @click="goEdit">
+          编辑测算
+        </wd-button>
+      </view>
+    </view>
   </view>
 </template>
 
@@ -232,6 +250,9 @@ const statusLabel = computed(() =>
   getDictLabel(DICT_TYPE.FL_QUOTE_STATUS, status.value) || (status.value === 1 ? '已确认' : '草稿'),
 )
 
+/** 是否展示底部操作栏（有测算记录或草稿态可编辑） */
+const showBottomBar = computed(() => !!quote.value?.latestTraceId || status.value !== 1)
+
 onLoad((query) => {
   quoteId.value = Number(query?.id)
   loadDetail()
@@ -247,5 +268,18 @@ async function loadDetail() {
   } finally {
     loading.value = false
   }
+}
+
+/** 跳转移动端编辑页 */
+function goEdit() {
+  uni.navigateTo({ url: `/pages-fl/quotecalc/edit?id=${quoteId.value}` })
+}
+
+/** 查看最近一次测算的计算过程（引擎步骤时间线） */
+function goTrace() {
+  if (!quote.value?.latestTraceId) {
+    return
+  }
+  uni.navigateTo({ url: `/pages-fl/quotecalc/trace?traceId=${quote.value.latestTraceId}` })
 }
 </script>

@@ -100,6 +100,17 @@ export interface ResultGridVO {
   }[]
 }
 
+/** 报送任务台账 新增/修改请求参数（与后端 TaxReportFilingSaveReqVO 对齐） */
+export interface TaxReportFilingSaveReqVO {
+  id?: number // 编号（编辑时必传）
+  templateId: number // 关联模板ID（必填）
+  batchId?: number // 数据版本（不传则不锁定，执行时按所属期解析）
+  submitDeadline?: string // 报送截止日期（yyyy-MM-dd）
+  sourceFiles?: string // 来源文件映射JSON
+  resultFile?: string // 结果文件路径
+  errorMsg?: string // 失败原因
+}
+
 /** 获得报送任务台账分页 */
 export function getTaxReportFilingPage(params: TaxReportFilingPageReqVO) {
   return http.get<PageResult<TaxReportFilingVO>>('/rpt/tax-report-filing/page', params)
@@ -108,6 +119,16 @@ export function getTaxReportFilingPage(params: TaxReportFilingPageReqVO) {
 /** 获得报送任务台账详情 */
 export function getTaxReportFiling(id: number) {
   return http.get<TaxReportFilingVO>('/rpt/tax-report-filing/get', { id })
+}
+
+/** 新增报送任务台账（仅创建任务，原始申报表由所选模板的模板文件提供，不立即执行） */
+export function createTaxReportFiling(data: TaxReportFilingSaveReqVO) {
+  return http.post<number>('/rpt/tax-report-filing/create', data)
+}
+
+/** 修改报送任务台账（仅更新模板/数据版本等元数据，不重新执行） */
+export function updateTaxReportFiling(data: TaxReportFilingSaveReqVO) {
+  return http.put<boolean>('/rpt/tax-report-filing/update', data)
 }
 
 /** 获得报送任务台账统计 */
