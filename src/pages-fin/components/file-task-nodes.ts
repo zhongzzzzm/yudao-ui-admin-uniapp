@@ -113,6 +113,16 @@ export const FILE_TASK_NODES: FileTaskNodeConfig[] = [
     ],
   },
   {
+    code: 'invoice_entry',
+    title: '发票入账匹配',
+    authPrefix: 'fin:invoice-entry',
+    formAlert: '上传进项票台账与发票入账导出信息，系统按发票号码关联并核对金额、税额，匹配一致的发票生成批量入账导入文件。',
+    inputs: [
+      { slot: 'ledger', label: '进项票台账', required: true, fileType: ['xls', 'xlsx'], help: '发票号码请以文本格式保存，20 位号码用数值格式会被 Excel 截断' },
+      { slot: 'entry', label: '发票入账导出', required: true, fileType: ['xls', 'xlsx'] },
+    ],
+  },
+  {
     code: 'invoice_voucher',
     title: '发票凭证关联',
     authPrefix: 'fin:invoice-voucher',

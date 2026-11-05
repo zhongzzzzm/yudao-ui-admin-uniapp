@@ -329,6 +329,14 @@
               "permission": "fin:invoice-verification:query"
             },
             {
+              "key": "fin-invoice-entry",
+              "name": "发票入账匹配",
+              "icon": "check-square",
+              "iconColor": "#13c2c2",
+              "url": "/pages-fin/invoiceentry/list",
+              "permission": "fin:invoice-entry:query"
+            },
+            {
               "key": "fin-invoice-voucher",
               "name": "凭证比对",
               "icon": "link",
