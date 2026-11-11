@@ -182,7 +182,7 @@
               :disabled="locked"
               type="number"
               no-border
-              placeholder="如 36（需被支付频率整除）"
+              placeholder="如 36（不整除时末期为短周期）"
             />
           </view>
           <view class="form-item">
@@ -1919,8 +1919,8 @@ const immediateIssues = computed<{ text: string, type: 'error' | 'warning' }[]>(
   if (leaseTimes && form.value.paymentFreq !== null && form.value.paymentFreq !== undefined) {
     if (leaseTimes % freqMonths.value !== 0) {
       issues.push({
-        text: `租赁期限 ${leaseTimes} 月无法被支付频率（每 ${freqMonths.value} 个月 1 期）整除，测算将无法完成，请调整期限或频率`,
-        type: 'error',
+        text: `租赁期限 ${leaseTimes} 月无法被支付频率（每 ${freqMonths.value} 个月 1 期）整除，将按短末期计息：余数月并为末期、末期利息按实际天数补差`,
+        type: 'warning',
       })
     }
   }
@@ -2488,10 +2488,6 @@ function validateForm(): boolean {
   }
   if (!form.value.rentRules.length) {
     toast.show('请至少添加一段租金规则')
-    return false
-  }
-  if (leaseTimes % freqMonths.value !== 0) {
-    toast.show(`租赁期限 ${leaseTimes} 月无法被支付频率（每 ${freqMonths.value} 个月 1 期）整除`)
     return false
   }
   return true
