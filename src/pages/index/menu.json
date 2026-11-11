@@ -267,6 +267,14 @@
               "iconColor": "#fa8c16",
               "url": "/pages-fl/quoteverify/list",
               "permission": "fl:quote-calc:query"
+            },
+            {
+              "key": "fl-quote-fetch",
+              "name": "取数",
+              "icon": "storage",
+              "iconColor": "#fa8c16",
+              "url": "/pages-fl/quotefetch/data/list",
+              "permission": "fl:fetch-data:query"
             }
           ]
         }

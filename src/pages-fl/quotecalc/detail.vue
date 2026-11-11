@@ -205,9 +205,19 @@
       v-if="showBottomBar"
       class="fixed inset-x-0 bottom-0 z-10 border-t border-t-[#f0f0f0] bg-white px-24rpx pb-[env(safe-area-inset-bottom)] pt-16rpx"
     >
-      <view class="flex gap-20rpx">
+      <view class="flex gap-12rpx">
         <wd-button v-if="quote?.latestTraceId" class="flex-1" plain @click="goTrace">
           计算过程
+        </wd-button>
+        <wd-button
+          v-if="canExport && quote?.latestTraceId"
+          class="flex-1"
+          plain
+          :loading="exporting"
+          :disabled="exporting"
+          @click="handleExportInout"
+        >
+          导出收支
         </wd-button>
         <wd-button v-if="status !== 1" class="flex-1" type="primary" @click="goEdit">
           编辑测算
@@ -224,7 +234,9 @@ import { getDictLabel } from '@/hooks/useDict'
 import { DICT_TYPE } from '@/utils/constants'
 import { formatMoney, formatPercent } from '@/utils/format'
 import { computed, ref } from 'vue'
-import { getQuoteCalc } from '@/api/fl/quoteCalc'
+import { exportInout, getQuoteCalc } from '@/api/fl/quoteCalc'
+import { useAccess } from '@/hooks/useAccess'
+import { useToast } from '@wot-ui/ui/components/wd-toast'
 
 defineOptions({
   name: 'FlQuoteCalcDetail',
@@ -240,6 +252,11 @@ definePage({
 function handleBack() {
   navigateBackPlus()
 }
+
+const toast = useToast()
+const { hasAccessByCodes } = useAccess()
+const canExport = computed(() => hasAccessByCodes(['fl:quote-calc:export']))
+const exporting = ref(false)
 
 const loading = ref(false)
 const quote = ref<QuoteCalcVO>()
@@ -281,5 +298,21 @@ function goTrace() {
     return
   }
   uni.navigateTo({ url: `/pages-fl/quotecalc/trace?traceId=${quote.value.latestTraceId}` })
+}
+
+/** 导出生效测算的收支计划 Excel */
+async function handleExportInout() {
+  if (!quoteId.value || exporting.value) {
+    return
+  }
+  exporting.value = true
+  try {
+    await exportInout(quoteId.value, `收支计划-${quote.value?.quotCode || quoteId.value}.xlsx`)
+    toast.show('收支计划导出成功')
+  } catch (error: any) {
+    toast.show(error?.message || '收支计划导出失败')
+  } finally {
+    exporting.value = false
+  }
 }
 </script>

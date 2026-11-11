@@ -84,6 +84,30 @@
               </view>
             </view>
           </view>
+          <!-- 报告导出与导入模板下载（导出仅在核对完成后可用） -->
+          <view class="mt-16rpx flex gap-16rpx border-t border-t-[#f0f0f0] pt-16rpx">
+            <wd-button
+              v-if="batch.status === 1 && canExport"
+              class="flex-1"
+              size="small"
+              plain
+              :loading="exporting"
+              :disabled="exporting"
+              @click="handleExportReport"
+            >
+              导出报告
+            </wd-button>
+            <wd-button
+              class="flex-1"
+              size="small"
+              plain
+              :loading="downloading"
+              :disabled="downloading"
+              @click="handleDownloadTemplate"
+            >
+              下载模板
+            </wd-button>
+          </view>
         </view>
 
         <!-- 差异明细（分页列表） -->
@@ -171,7 +195,15 @@ import type { QuoteVerifyBatchVO, QuoteVerifyCompareRowVO, QuoteVerifyDiffVO } f
 import { navigateBackPlus } from '@/utils'
 import { useDialog } from '@wot-ui/ui/components/wd-dialog'
 import { useToast } from '@wot-ui/ui/components/wd-toast'
-import { getQuoteVerify, getQuoteVerifyCompareRows, getQuoteVerifyDiffPage, runQuoteVerify, VERIFY_FIELD_LABELS } from '@/api/fl/quoteVerify'
+import {
+  exportVerifyReport,
+  getQuoteVerify,
+  getQuoteVerifyCompareRows,
+  getQuoteVerifyDiffPage,
+  getVerifyImportTemplate,
+  runQuoteVerify,
+  VERIFY_FIELD_LABELS,
+} from '@/api/fl/quoteVerify'
 import { useAccess } from '@/hooks/useAccess'
 import { formatMoney, formatPercent } from '@/utils/format'
 import { computed, ref } from 'vue'
@@ -197,6 +229,11 @@ const { hasAccessByCodes } = useAccess()
 
 /** 重新核对权限（fl:quote-verify:create） */
 const canRun = computed(() => hasAccessByCodes(['fl:quote-verify:create']))
+
+/** 导出报告权限（fl:quote-calc:export） */
+const canExport = computed(() => hasAccessByCodes(['fl:quote-calc:export']))
+const exporting = ref(false)
+const downloading = ref(false)
 
 const PAGE_SIZE = 20
 
@@ -364,6 +401,40 @@ async function pollStatus(times: number) {
     toast.show('核对完成')
   } catch {
     running.value = false
+  }
+}
+
+// ========== 报告导出与模板下载 ==========
+
+/** 导出核对报告 xlsx（汇总 + 差异明细） */
+async function handleExportReport() {
+  if (!batchId.value || exporting.value) {
+    return
+  }
+  exporting.value = true
+  try {
+    await exportVerifyReport(batchId.value, `复核报告-${batchId.value}.xlsx`)
+    toast.show('报告导出成功')
+  } catch (error: any) {
+    toast.show(error?.message || '报告导出失败')
+  } finally {
+    exporting.value = false
+  }
+}
+
+/** 下载与当前批次类型一致的导入模板 */
+async function handleDownloadTemplate() {
+  if (downloading.value) {
+    return
+  }
+  downloading.value = true
+  try {
+    await getVerifyImportTemplate(batch.value?.verifyType === 2 ? 2 : 1)
+    toast.show('模板下载成功')
+  } catch (error: any) {
+    toast.show(error?.message || '模板下载失败')
+  } finally {
+    downloading.value = false
   }
 }
 </script>

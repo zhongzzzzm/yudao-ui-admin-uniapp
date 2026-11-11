@@ -109,7 +109,7 @@ export default defineConfig(({ command, mode }) => {
           'src/pages-tax', // “税务管理”模块
           'src/pages-fin', // “财务”模块
           'src/pages-bpm', // “轻量审批”模块（移动审批详情）
-          'src/pages-fl', // “报价测算”模块（App 只读查看）
+          'src/pages-fl', // “报价测算 / 复核 / 取数”模块（取数域只读查看 + 发起动作）
         ],
         dts: 'src/types/uni-pages.d.ts',
       }),

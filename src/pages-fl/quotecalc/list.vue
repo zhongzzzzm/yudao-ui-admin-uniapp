@@ -3,7 +3,16 @@
     <!-- 顶部导航栏 -->
     <wd-navbar
       left-arrow title="报价测算" placeholder safe-area-inset-top fixed @click-left="handleBack"
-    />
+    >
+      <template #right>
+        <view v-if="canFetch" class="mr-20rpx text-26rpx text-[#018d71]" @click="goFetch">
+          取数
+        </view>
+        <view v-if="canExport" class="text-26rpx text-[#018d71]" @click="handleExport">
+          {{ exporting ? '导出中' : '导出' }}
+        </view>
+      </template>
+    </wd-navbar>
 
     <!-- 状态筛选条 -->
     <view class="flex gap-16rpx overflow-x-auto bg-white px-24rpx py-16rpx">
@@ -82,8 +91,10 @@ import { navigateBackPlus } from '@/utils'
 import { getDictLabel } from '@/hooks/useDict'
 import { DICT_TYPE } from '@/utils/constants'
 import { formatMoney, formatPercent } from '@/utils/format'
-import { ref } from 'vue'
-import { getQuoteCalcPage } from '@/api/fl/quoteCalc'
+import { computed, ref } from 'vue'
+import { exportExcel, getQuoteCalcPage } from '@/api/fl/quoteCalc'
+import { useAccess } from '@/hooks/useAccess'
+import { useToast } from '@wot-ui/ui/components/wd-toast'
 
 defineOptions({
   name: 'FlQuoteCalcList',
@@ -100,6 +111,12 @@ function handleBack() {
   navigateBackPlus()
 }
 
+const toast = useToast()
+const { hasAccessByCodes } = useAccess()
+const canFetch = computed(() => hasAccessByCodes(['fl:fetch-data:query']))
+const canExport = computed(() => hasAccessByCodes(['fl:quote-calc:export']))
+const exporting = ref(false)
+
 /** 方案状态：0 草稿 1 已确认（QuoteStatusEnum） */
 const statusChips = [
   { label: '全部', value: -1 },
@@ -109,6 +126,27 @@ const statusChips = [
 const currentStatus = ref(-1)
 const list = ref<QuoteCalcVO[]>([])
 const pagingRef = ref<any>()
+
+/** 进入取数域只读列表（与工作台「取数」菜单同一入口） */
+function goFetch() {
+  uni.navigateTo({ url: '/pages-fl/quotefetch/data/list' })
+}
+
+/** 按当前状态筛选导出报价测算列表 Excel */
+async function handleExport() {
+  if (exporting.value) {
+    return
+  }
+  exporting.value = true
+  try {
+    await exportExcel(currentStatus.value === -1 ? {} : { status: currentStatus.value })
+    toast.show('列表导出成功')
+  } catch (error: any) {
+    toast.show(error?.message || '列表导出失败')
+  } finally {
+    exporting.value = false
+  }
+}
 
 function handleStatusChange(value: number) {
   if (currentStatus.value === value) {

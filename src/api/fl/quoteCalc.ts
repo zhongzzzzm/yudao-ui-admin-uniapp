@@ -1,8 +1,9 @@
 import type { PageParam, PageResult } from '@/http/types'
 import { http } from '@/http/http'
+import { downloadApiFile } from '@/utils/download'
 
 /**
- * 报价测算：方案分页/详情（子表随详情返回）+ 移动端编辑与测算操作。
+ * 报价测算：方案分页/详情（子表随详情返回）+ 移动端编辑与测算操作 + Excel 导出。
  * 新建/编辑走整体提交（主表 + 子表），保存即由后端自动测算。
  */
 
@@ -157,6 +158,38 @@ export function copyQuoteCalc(id: number) {
 /** 删除报价测算方案 */
 export function deleteQuoteCalc(id: number) {
   return http.delete<boolean>(`/fl/quote-calc/delete?id=${id}`)
+}
+
+// ==================== Excel 导出 ====================
+
+/** 报价测算列表导出筛选参数（与分页筛选一致） */
+export interface QuoteCalcExportParams extends Partial<PageParam> {
+  quotCode?: string // 方案编号，模糊匹配
+  quotName?: string // 方案名称，模糊匹配
+  customerName?: string // 客户名称，模糊匹配
+  status?: number // 状态：0 草稿 1 已确认
+  minTotalAmount?: number // 设备总金额最小值
+  maxTotalAmount?: number // 设备总金额最大值
+  createTime?: [string, string] // 创建时间区间
+}
+
+/** 校验正整数编号（导出接口只接受 query 编号） */
+function requireQuoteId(id: number) {
+  const value = Number(id)
+  if (!Number.isFinite(value) || value <= 0) {
+    throw new Error('报价方案编号无效')
+  }
+}
+
+/** 导出生效测算的收支计划 Excel */
+export function exportInout(id: number, fileName = '收支计划.xlsx') {
+  requireQuoteId(id)
+  return downloadApiFile('/fl/quote-calc/export-inout', { id }, fileName)
+}
+
+/** 按筛选条件导出报价测算列表 Excel */
+export function exportExcel(params: QuoteCalcExportParams = {}, fileName = '报价测算.xlsx') {
+  return downloadApiFile('/fl/quote-calc/export-excel', params, fileName)
 }
 
 // ==================== 测算记录（历史版本，可观测） ====================

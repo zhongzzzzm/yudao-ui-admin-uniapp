@@ -3,9 +3,10 @@ import { http } from '@/http/http'
 import { useTokenStore } from '@/store/token'
 import { useUserStore } from '@/store/user'
 import { getEnvBaseUrl } from '@/utils'
+import { downloadApiFile } from '@/utils/download'
 
 /**
- * 报价复核：复核批次列表/详情、差异明细、全量对照（只读查看），
+ * 报价复核：复核批次列表/详情、差异明细、全量对照（只读查看）、报告导出、模板下载与批次删除，
  * 以及移动端导入复核向导（上传解析、创建并核对、重新核对）。
  */
 
@@ -38,6 +39,13 @@ export interface QuoteVerifyBatchVO {
   notifyStatus?: number // 企微通知状态：0 未推 1 已推 2 推送失败 3 跳过未推
   memo?: string // 备注
   createTime?: number // 创建时间
+  asyncStatus?: number // 异步核对状态：0 同步完成 1 排队 2 执行中 3 失败
+  asyncMsg?: string // 异步核对说明或失败原因
+  createdQuoteId?: number // 复核通过后一键创建的正式报价方案编号
+  approvalStatus?: number // 审批状态：0 待提交 1 审批中 2 已通过 3 已驳回 4 退回修改
+  approvalInstanceId?: number // 审批实例编号
+  compareScope?: number // 比对范围：0 仅租金/投放四类 1 含保证金/服务费全事件
+  retryCount?: number // 异步任务重试次数
   diffs?: QuoteVerifyDiffVO[] // 差异明细（详情返回）
 }
 
@@ -115,6 +123,37 @@ export function getQuoteVerifyDiffPage(batchId: number, params: PageParam & { co
 /** 获得全量对照（第三方原值 vs 干饭人计算值，含一致行） */
 export function getQuoteVerifyCompareRows(batchId: number) {
   return http.get<QuoteVerifyCompareVO>('/fl/quote-verify/compare-rows', { batchId })
+}
+
+// ==================== 报告导出、模板下载与批次删除 ====================
+
+/** 校验正整数批次编号 */
+function requireBatchId(id: number) {
+  const value = Number(id)
+  if (!Number.isFinite(value) || value <= 0) {
+    throw new Error('复核批次编号无效')
+  }
+}
+
+/** 导出核对报告 xlsx（汇总 + 差异明细；仅核对完成后可用） */
+export function exportVerifyReport(id: number, fileName = '报价复核报告.xlsx') {
+  requireBatchId(id)
+  return downloadApiFile('/fl/quote-verify/export-report', { id }, fileName)
+}
+
+/** 下载导入模板（verifyType：1 报价表 2 计提表） */
+export function getVerifyImportTemplate(verifyType: number, fileName?: string) {
+  if (verifyType !== 1 && verifyType !== 2) {
+    throw new Error('复核类型无效')
+  }
+  const fallback = verifyType === 2 ? '计提表导入模板.xlsx' : '报价表导入模板.xlsx'
+  return downloadApiFile('/fl/quote-verify/get-import-template', { verifyType }, fileName || fallback)
+}
+
+/** 删除复核批次（级联差异明细；核对中、审批中由后端状态机拦截） */
+export function deleteVerify(id: number) {
+  requireBatchId(id)
+  return http.delete<boolean>(`/fl/quote-verify/delete?id=${id}`)
 }
 
 // ==================== 导入复核向导（移动端兜底通道） ====================
