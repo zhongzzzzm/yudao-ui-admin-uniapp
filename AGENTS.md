@@ -2,6 +2,9 @@
 
 干饭人管理后台 · 移动端：uni-app 跨端应用（H5 / 微信小程序 / App），后端对接干饭人（yudao 系）管理后台的 `admin-api`。基于 unibest 模板二次开发，正在从 "yudao" 品牌迁移为 "ganfanren"（`src/` 下已无 yudao 引用，新增代码不要引入该词）。
 
+> 文档分层（L0 总纲 → L1 规范 → L2 模块 → L3 设计）与全量索引见仓库根 `docs/README.md`；本文件只写移动端特有约定，框架通用用法见 `docs/base/`（unibest 上游文档）。
+
+
 ## 常用命令
 
 包管理器只用 pnpm（`preinstall` 强制），Node >= 20。
@@ -19,7 +22,7 @@
 ## 架构与分层
 
 - **路由与清单是生成的**：`src/pages.json` 和 `src/manifest.json` 由约定式路由插件生成，不要手改；改 `pages.config.ts` 和 `manifest.config.ts`，改完检查生成产物和分包配置。Tabbar 配置统一在 `src/tabbar/config.ts`。
-- **分包即业务模块**：`src/pages-{core,system,infra,rpt,tax,fin,ai,bpm,fl}` 对应 `src/api/<模块>/`，分包清单与 `vite.config.ts` 的 UniPages `subPackages` 一致（core/system/infra/rpt/tax/fin/ai/bpm/fl，新增分包必须在此注册）。每个业务模块内部自带 `components/`、`store/`、`utils/` 等。业务功能口径为**对齐 PC 端全量能力**（2026-11 起已取消「App 只读」约定）：tax/fin/rpt/bpm/fl 均含编辑操作（含报价测算编辑页、财务文件任务上传发起等）；仅少数重交互形态保留 PC 为主（银行流水列映射可视化编辑器、数据权限条件构建器、指标血缘 DAG 图形化等，App 用 JSON 编辑/层级列表替代并已在页面内注明）。`pages-ai` 分包尚未落地。
+- **分包即业务模块**：`src/pages-{core,system,infra,rpt,tax,fin,ai,bpm,fl}` 对应 `src/api/<模块>/`，分包清单与 `vite.config.ts` 的 UniPages `subPackages` 一致（core/system/infra/rpt/tax/fin/ai/bpm/fl，新增分包必须在此注册）。每个业务模块内部自带 `components/`、`store/`、`utils/` 等。业务功能口径为**对齐 PC 端全量能力**（2026-11 起已取消「App 只读」约定）：tax/fin/rpt/bpm/fl 均含编辑操作（含报价测算编辑页、财务文件任务上传发起等）；仅少数重交互形态保留 PC 为主（银行流水列映射可视化编辑器、数据权限条件构建器、指标血缘 DAG 图形化等，App 用 JSON 编辑/层级列表替代并已在页面内注明）。`pages-ai` 分包已随 AI 模块于 2026-10-13 一并移除（当前后端无 `ganfanren-module-ai`、移动端无 `pages-ai`），不要再新增该分包。
 - **HTTP 层**：统一用 `@/http/http` 的 `http`，类型 `PageParam` / `PageResult` 来自 `@/http/types`。`src/http/interceptor.ts` 处理 token（双 token 模式）、租户、API 加解密，头部注释标明是 unibest 官方维护代码，不要大改，避免上游合并冲突。
 - **组件 easycom 前缀**（`pages.config.ts`）：`fg-` → `src/components/fg-*`，`yd-` → `src/components/ganfanren-ui/yd-*`（项目自有 UI，通过 `ganfanren-ui/index.ts` 导出），`wd-` → wot-ui，`z-paging` → 分页组件。新组件按前缀规则放对应目录，无需 import。
 - **状态**：Pinia（`src/store/`），pinia-plugin-persistedstate；字典用 `src/hooks/useDict.ts`。
