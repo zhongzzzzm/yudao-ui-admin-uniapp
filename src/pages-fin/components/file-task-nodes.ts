@@ -116,10 +116,23 @@ export const FILE_TASK_NODES: FileTaskNodeConfig[] = [
     code: 'invoice_entry',
     title: '发票入账匹配',
     authPrefix: 'fin:invoice-entry',
-    formAlert: '上传进项票台账与发票入账导出信息，系统按发票号码关联并核对金额、税额，匹配一致的发票生成批量入账导入文件。',
+    formAlert:
+      '上传进项票台账即可按《批量发票入账导入模板(企业)》生成导入文件；如同时上传发票入账导出，将额外核对金额、税额并跳过已入账发票。',
     inputs: [
-      { slot: 'ledger', label: '进项票台账', required: true, fileType: ['xls', 'xlsx'], help: '发票号码请以文本格式保存，20 位号码用数值格式会被 Excel 截断' },
-      { slot: 'entry', label: '发票入账导出', required: true, fileType: ['xls', 'xlsx'] },
+      {
+        slot: 'ledger',
+        label: '进项票台账',
+        required: true,
+        fileType: ['xls', 'xlsx'],
+        help: '必含：发票号码、发票税额、开票日期，以及 发票金额(含税)/不含税金额/价税合计 三选一；20 位号码请用文本格式',
+      },
+      {
+        slot: 'entry',
+        label: '发票入账导出',
+        required: false,
+        fileType: ['xls', 'xlsx'],
+        help: '选填：税局导出的发票入账信息，上传后与台账核对并跳过已入账发票',
+      },
     ],
   },
   {
